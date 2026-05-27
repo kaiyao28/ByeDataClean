@@ -1,0 +1,177 @@
+# ── cleaning_rules.example.yaml ───────────────────────────────────────────────
+# Copy this to cleaning_rules.yaml and edit for your dataset.
+# Pass it to the cleaner:
+#
+#   # Preview changes first — no files are written:
+#   python python/run_cleaner.py \
+#     --input data/raw/my_data.csv \
+#     --rules config/cleaning_rules.yaml \
+#     --dry-run
+#
+#   # Run for real (add --confirm-destructive if any step drops rows/columns):
+#   python python/run_cleaner.py \
+#     --input data/raw/my_data.csv \
+#     --rules config/cleaning_rules.yaml \
+#     --output data/processed/my_data_cleaned.csv \
+#     --confirm-destructive
+#
+# See docs/cleaning_rules_reference.md for all supported actions and parameters.
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: 1
+name: "example_cleaning_rules"
+
+# ── Run metadata (logged in every cleaning log and run manifest) ──────────────
+metadata:
+  analyst: "Your Name"
+  analysis_purpose: "cross-sectional descriptive analysis"
+  expected_unit: "one row per participant"
+  notes: "Cleaning decisions documented in docs/cleaning_decisions.md"
+
+# ── Global safety guards ──────────────────────────────────────────────────────
+# These block destructive operations unless you explicitly allow them here
+# AND pass --confirm-destructive on the command line.
+# Default (if this block is omitted): both are false.
+safety:
+  allow_row_drop: false       # set true to permit remove_exact_duplicates, filter_rows_explicit
+  allow_column_drop: false    # set true to permit drop_columns, keep_columns
+
+# ── Cleaning steps ────────────────────────────────────────────────────────────
+# Each step must have: step (int), action (str).
+# Optional per-step fields:
+#   decision_status: "draft" | "approved" | "deferred" | "rejected"
+#   rationale: free text — your reason for this decision
+# Both fields are copied verbatim into the cleaning log.
+#
+# IMPORTANT: every step is explicit. The pipeline does exactly what is listed
+# here and nothing more. Steps are applied in order.
+
+rules:
+
+  - step: 1
+    name: "standardise_column_names"
+    action: "standardise_column_names"
+    style: "snake_case"              # snake_case is the only supported style in v1
+    decision_status: "approved"
+    rationale: >
+      Consistent snake_case names are required by downstream R and Python scripts.
+      This step is always safe and non-destructive.
+
+  - step: 2
+    name: "replace_common_missing_codes"
+    action: "replace_missing_codes"
+    columns: "all"
+    missing_codes:
+      - ""
+      - "NA"
+      - "N/A"
+      - "n/a"
+      - "Unknown"
+      - "unknown"
+      - "Prefer not to say"
+      - -9
+      - -99
+      - 999
+    decision_status: "approved"
+    rationale: >
+      These codes were used as sentinel values in the data export. Confirmed
+      with the data manager on 2024-11-01 that all are genuine missing, not
+      real categories.
+
+  - step: 3
+    name: "trim_string_columns"
+    action: "trim_whitespace"
+    columns: "string"                # applies to all object/string dtype columns
+    decision_status: "approved"
+    rationale: >
+      Leading/trailing whitespace causes silent value-mismatch errors in merges
+      and value_counts. Never intentional in this dataset.
+
+  - step: 4
+    name: "map_sex_labels"
+    action: "map_categories"
+    column: "sex"
+    mapping:
+      M:      "Male"
+      male:   "Male"
+      Male:   "Male"
+      F:      "Female"
+      female: "Female"
+      Female: "Female"
+    unmatched_action: "warn"         # warn | set_missing | keep
+    decision_status: "approved"
+    rationale: >
+      Source data contains inconsistent capitalisation and abbreviations.
+      Analyst reviewed all unique values 2024-11-05. Non-binary labels are
+      not present in this cohort so set_missing is not needed.
+
+  - step: 5
+    name: "set_invalid_age_to_missing"
+    action: "set_invalid_to_missing"
+    column: "age"
+    min: 18
+    max: 100
+    decision_status: "approved"
+    rationale: >
+      Ages outside [18, 100] are biologically implausible for this adult cohort.
+      Three records identified with age = -9 (entry error). Values set to NaN;
+      rows are NOT dropped — missingness is preserved for sensitivity analysis.
+
+  - step: 6
+    name: "flag_bmi_outliers"
+    action: "flag_outliers_iqr"
+    column: "bmi"
+    output_column: "bmi_outlier_flag"
+    remove: false                    # flag only — never remove by default
+    decision_status: "draft"
+    rationale: >
+      IQR method identifies candidate outliers for analyst review.
+      Flag only at this stage. Analyst will inspect flagged rows and decide
+      in a separate step whether to set values to missing.
+
+  - step: 7
+    name: "add_missingness_flags"
+    action: "create_missingness_flags"
+    columns: "all"
+    only_if_any_missing: true        # skip columns with no missing values
+    suffix: "_missing_flag"          # resulting column name: {col}_missing_flag
+    decision_status: "approved"
+    rationale: >
+      Binary flag columns preserve the fact that a value was missing, which
+      is required for missingness-not-at-random sensitivity analyses in the
+      regression models. Safe and non-destructive — adds columns only.
+
+  - step: 8
+    name: "remove_exact_duplicate_rows"
+    action: "remove_exact_duplicates"
+    allow_row_drop: true             # also requires safety.allow_row_drop: true
+    decision_status: "approved"
+    rationale: >
+      Two participant IDs appear twice with identical values on all columns.
+      Confirmed with site coordinator (email 2024-11-08) that these are
+      accidental double-exports, not re-assessments. Exact duplicate rows only.
+
+# ── Validation checks (run automatically after cleaning) ─────────────────────
+# These are assertions, not cleaning actions — they pass or fail and are
+# written to the validation report. Failing checks do NOT abort the run.
+
+validation:
+  required_columns:
+    - participant_id
+    - age
+    - sex
+
+  unique_keys:
+    - [participant_id]
+    # - [participant_id, visit_number]   # use composite key for longitudinal data
+
+  accepted_values:
+    sex: ["Male", "Female"]
+
+  ranges:
+    age:
+      min: 18
+      max: 100
+    bmi:
+      min: 10
+      max: 80

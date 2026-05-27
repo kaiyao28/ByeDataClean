@@ -1,0 +1,70 @@
+# ── machine_learning.yaml ─────────────────────────────────────────────────────
+# Cleaning profile for machine learning / prediction pipelines.
+#
+# ⚠️  LEAKAGE WARNING — read before using.
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: 1
+name: "machine_learning_profile"
+description: |
+  Pre-processing cleaning for machine learning pipelines.
+  Standardises labels and missing codes only.
+  Does NOT impute, scale, or encode — these must be fitted on training data only.
+
+leakage_warning: |
+  IMPORTANT: This profile only applies label and missing-code standardisation.
+
+  DO NOT do any of the following on the full dataset:
+    - Imputation (fit imputers on training data only)
+    - Feature scaling / normalisation (fit scalers on training data only)
+    - One-hot encoding (fit encoders on training data only)
+    - Target encoding
+
+  Apply all of the above INSIDE your ML pipeline (sklearn Pipeline, tidymodels recipe, etc.)
+  AFTER splitting into train and test sets.
+
+  If you impute or scale before splitting, you will leak test-set information
+  into your training distribution, inflating performance estimates.
+
+profile_notes:
+  - Handle unseen categories at inference time (e.g. add handle_unknown='ignore' to OHE).
+  - Remove post-collection features that would not be available at prediction time.
+  - Document all preprocessing decisions for reproducibility.
+
+input:
+  expected_unit: "one row per observation"
+  id_cols: null
+
+output:
+  save_cleaned_data: true
+  save_cleaning_log: true
+  save_validation_report: false
+  save_after_qc_report: false
+
+rules:
+
+  - step: 1
+    name: "standardise_column_names"
+    action: "standardise_column_names"
+    style: "snake_case"
+
+  - step: 2
+    name: "replace_common_missing_codes"
+    action: "replace_missing_codes"
+    columns: "all"
+    missing_codes: ["", "NA", "N/A", "Unknown", "unknown", -9, -99, 999]
+
+  - step: 3
+    name: "trim_string_columns"
+    action: "trim_whitespace"
+    columns: "string"
+
+  # ── Add label standardisation rules here ──────────────────────────────────
+  # No imputation, scaling, or encoding rules here.
+
+  # - step: 4
+  #   name: "remove_exact_duplicates"
+  #   action: "remove_exact_duplicates"
+  #   allow_row_drop: true
+
+validation: {}

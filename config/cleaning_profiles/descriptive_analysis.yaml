@@ -1,0 +1,83 @@
+# ── descriptive_analysis.yaml ─────────────────────────────────────────────────
+# Cleaning profile for descriptive / summary analysis.
+#
+# Principle: preserve observed data honestly.
+# - Standardise missing codes and labels.
+# - Flag but never remove outliers.
+# - Do not impute.
+# - Do not collapse categories without justification.
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: 1
+name: "descriptive_analysis_profile"
+description: |
+  Conservative cleaning for descriptive analysis.
+  Preserves observed distributions. Flags issues without removing data.
+  Suitable for data summaries, frequency tables, and exploratory work.
+
+profile_notes:
+  - Outliers are flagged only; do not remove them for descriptive work.
+  - Missingness is preserved and should be shown in tables.
+  - Avoid imputation — imputed values are not observed.
+  - Only standardise labels that are unambiguously equivalent.
+
+input:
+  expected_unit: "one row per participant"
+  id_cols: null   # set participant ID column(s) if known
+
+output:
+  save_cleaned_data: true
+  save_cleaning_log: true
+  save_validation_report: true
+  save_after_qc_report: true
+
+rules:
+
+  - step: 1
+    name: "standardise_column_names"
+    action: "standardise_column_names"
+    style: "snake_case"
+
+  - step: 2
+    name: "replace_common_missing_codes"
+    action: "replace_missing_codes"
+    columns: "all"
+    missing_codes:
+      - ""
+      - "NA"
+      - "N/A"
+      - "Unknown"
+      - "unknown"
+      - "Prefer not to say"
+      - -9
+      - -99
+      - 999
+
+  - step: 3
+    name: "trim_string_columns"
+    action: "trim_whitespace"
+    columns: "string"
+
+  # ── Add column-specific rules below ────────────────────────────────────────
+  # Uncomment and adapt as needed.
+
+  # - step: 4
+  #   name: "map_sex_labels"
+  #   action: "map_categories"
+  #   column: "sex"
+  #   mapping:
+  #     M: "Male"
+  #     male: "Male"
+  #     F: "Female"
+  #     female: "Female"
+  #   unmatched_action: "warn"
+
+  # - step: 5
+  #   name: "flag_age_outliers"
+  #   action: "flag_outliers_iqr"
+  #   column: "age"
+  #   output_column: "age_outlier_flag"
+  #   remove: false   # never true for descriptive analysis
+
+validation: {}
+  # Add validation checks if you have a defined schema.

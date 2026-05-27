@@ -1,0 +1,69 @@
+# ── longitudinal_analysis.yaml ────────────────────────────────────────────────
+# Cleaning profile for longitudinal / repeated-measures data.
+#
+# Principle: preserve the time structure. Do not treat repeated IDs as errors.
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: 1
+name: "longitudinal_analysis_profile"
+description: |
+  Cleaning for longitudinal and repeated-measures data.
+  Preserves multiple rows per participant.
+  Uses composite keys for uniqueness checks.
+  Validates visit/date ordering.
+
+profile_notes:
+  - Duplicate participant IDs are EXPECTED. Do not remove them automatically.
+  - Define the composite key (participant_id + visit_id or date).
+  - Check that visit/date order is consistent before analysis.
+  - Choose wide vs long format based on the analysis method.
+  - Derive follow-up time AFTER date validation, not before.
+
+input:
+  expected_unit: "one row per participant per visit"
+  id_cols: ["participant_id"]
+  composite_key: ["participant_id", "visit_id"]   # set to your actual columns
+
+output:
+  save_cleaned_data: true
+  save_cleaning_log: true
+  save_validation_report: true
+  save_after_qc_report: true
+
+rules:
+
+  - step: 1
+    name: "standardise_column_names"
+    action: "standardise_column_names"
+    style: "snake_case"
+
+  - step: 2
+    name: "replace_common_missing_codes"
+    action: "replace_missing_codes"
+    columns: "all"
+    missing_codes: ["", "NA", "N/A", "Unknown", "Prefer not to say", -9, -99, 999]
+
+  - step: 3
+    name: "trim_string_columns"
+    action: "trim_whitespace"
+    columns: "string"
+
+  - step: 4
+    name: "parse_assessment_date"
+    action: "parse_dates"
+    columns: ["assessment_date"]   # replace with your actual date column(s)
+    format: null   # null = pandas auto-detect; set '%Y-%m-%d' for explicit format
+
+  # ── Exact duplicates only (not by ID alone) ───────────────────────────────
+  # If exact duplicate rows (all fields identical) exist, they are likely errors.
+  # - step: 5
+  #   name: "remove_exact_duplicate_rows"
+  #   action: "remove_exact_duplicates"
+  #   allow_row_drop: true
+
+validation:
+  required_columns:
+    - participant_id
+    # - visit_id   # add if you have a visit identifier
+  unique_keys:
+    - [participant_id, visit_id]   # composite key — not participant_id alone

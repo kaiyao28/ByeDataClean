@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=67"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "data-cleaning-toolkit"
+version = "0.1.0"
+description = "Lightweight orchestration layer for descriptive QC reporting around pandas/numpy, skimpy, and ydata-profiling."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "pandas>=1.5",
+    "numpy>=1.23",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+examples = ["seaborn>=0.12", "scikit-learn>=1.1"]
+profiling = ["skimpy>=0.0.7", "ydata-profiling>=4.0"]
+dev = ["pytest>=7.0"]
+all = [
+    "seaborn>=0.12",
+    "scikit-learn>=1.1",
+    "skimpy>=0.0.7",
+    "ydata-profiling>=4.0",
+    "pytest>=7.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,62 @@
+# ── reporter_config.example.yaml ──────────────────────────────────────────────
+# Copy this to reporter_config.yaml (git-ignored) and edit as needed.
+# All fields are optional; shown values are defaults unless marked.
+
+# Input: provide one of input_path or example_dataset (CLI flags override this)
+input_path: null
+example_dataset: "penguins"   # penguins | tips | iris
+
+# Output locations
+output_dir: "reports/descriptive_summary"
+full_profile_dir: "reports/full_profiles"
+report_basename: "descriptive_qc_report"
+
+# Column selection (null = all columns)
+columns: null
+# columns:
+#   - age
+#   - sex
+#   - bmi
+#   - diagnosis
+
+# ID columns for duplicate/integrity checks (null = skip ID checks)
+id_cols: null
+# id_cols:
+#   - participant_id
+
+# Report mode: quick | full | both
+# quick  → markdown/text summary (always available)
+# full   → HTML profile via ydata-profiling (requires optional install)
+# both   → produce both
+mode: "quick"
+
+# Type overrides (use when auto-detection is wrong)
+# Keys are column names; values are: continuous | categorical | binary | date | text_high_cardinality | empty | constant
+type_overrides: {}
+# type_overrides:
+#   visit_number: categorical
+
+# Explicitly mark date columns (parsed before type inference)
+date_columns: []
+# date_columns:
+#   - assessment_date
+
+# Schema file for validation checks (optional)
+schema_path: null
+# schema_path: "config/schema.example.yaml"
+
+# ── Thresholds ────────────────────────────────────────────────────────────────
+thresholds:
+  high_missingness: 0.20          # fraction; warn if column has > 20 % missing
+  very_high_missingness: 0.50     # fraction; flag as severe
+  imbalance_cutoff: 0.95          # binary column imbalance warning threshold
+  high_cardinality_cutoff: 50     # unique values above this → text_high_cardinality
+  rare_category_cutoff: 0.01      # category proportion below this → rare
+  outlier_method: "iqr"           # iqr (only method implemented in v0.1)
+
+# ── Privacy ───────────────────────────────────────────────────────────────────
+privacy:
+  suppress_id_values: true        # never print example values for id columns
+  suppress_free_text_examples: true
+  max_category_levels_shown: 20
+  max_text_length_shown: 40

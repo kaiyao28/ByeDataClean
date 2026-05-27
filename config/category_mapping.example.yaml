@@ -1,0 +1,88 @@
+# ── category_mapping.example.yaml ─────────────────────────────────────────────
+# Mapping dictionaries for standardising category labels.
+# Copy this to category_mapping.yaml (git-ignored) and edit for your dataset.
+#
+# Format per column:
+#   column_name:
+#     "raw value": "standardised value"
+#
+# Usage:
+#   1. The cleaning script reads this file.
+#   2. For each column, apply str.strip() and str.lower() first, then map.
+#   3. Values not in the mapping are left unchanged (or flagged if an allowed_values list is set).
+#
+# Tip: always define the mapping before cleaning, not in response to what you find.
+#      Post-hoc label merging can hide real variation.
+# ─────────────────────────────────────────────────────────────────────────────
+
+mappings:
+
+  sex:
+    # Standardise to "Female" / "Male"
+    "female": "Female"
+    "f": "Female"
+    "F": "Female"
+    "woman": "Female"
+    "male": "Male"
+    "m": "Male"
+    "M": "Male"
+    "man": "Male"
+    "1": "Male"       # if coded numerically — verify this matches your data documentation
+    "2": "Female"     # if coded numerically — verify this matches your data documentation
+
+  diagnosis:
+    # Standardise to allowed values
+    "control": "Control"
+    "hc": "Control"
+    "healthy control": "Control"
+    "sz": "SCZ"
+    "schizophrenia": "SCZ"
+    "scz spectrum": "SCZ"
+    "bipolar": "BD"
+    "bpd": "BD"
+    "bipolar disorder": "BD"
+    "major depression": "MDD"
+    "depression": "MDD"
+    "major depressive disorder": "MDD"
+
+  ethnicity:
+    # Standardise common variations
+    "white british": "White British"
+    "british": "White British"
+    "white - british": "White British"
+    "white irish": "White Irish"
+    "irish": "White Irish"
+    "white - irish": "White Irish"
+    "asian": "Asian or Asian British"
+    "south asian": "Asian or Asian British"
+    "black": "Black or Black British"
+    "african": "Black or Black British"
+    "not disclosed": "Not stated"
+    "prefer not to say": "Not stated"
+    "pnts": "Not stated"
+    "unknown": "Not stated"
+
+  smoking_status:
+    # Standardise to: "Never", "Ex-smoker", "Current"
+    "never": "Never"
+    "non-smoker": "Never"
+    "nonsmoker": "Never"
+    "no": "Never"
+    "ex": "Ex-smoker"
+    "ex smoker": "Ex-smoker"
+    "former": "Ex-smoker"
+    "quit": "Ex-smoker"
+    "yes": "Current"
+    "current": "Current"
+    "smoker": "Current"
+
+  yes_no:
+    # Generic yes/no standardisation — clone per column if needed
+    "yes": "Yes"
+    "y": "Yes"
+    "1": "Yes"
+    "true": "Yes"
+    "no": "No"
+    "n": "No"
+    "0": "No"
+    "false": "No"

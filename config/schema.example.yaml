@@ -1,0 +1,33 @@
+# ── schema.example.yaml ───────────────────────────────────────────────────────
+# Optional schema for validation checks.
+# Pass via --schema config/schema.example.yaml or schema_path in reporter_config.yaml.
+# Only columns listed here are validated; others are still profiled normally.
+
+columns:
+  participant_id:
+    role: id
+    required: true
+    unique: true
+
+  age:
+    type: continuous
+    required: false
+    min: 18
+    max: 100
+
+  bmi:
+    type: continuous
+    required: false
+    min: 10
+    max: 80
+
+  sex:
+    type: binary
+    allowed_values: ["Female", "Male"]
+
+  diagnosis:
+    type: categorical
+    allowed_values: ["Control", "SCZ", "BD", "MDD"]
+
+  assessment_date:
+    type: date

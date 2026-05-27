@@ -1,0 +1,550 @@
+I want to build a VS Code-friendly repository called data-cleaning-toolkit.
+
+Please revise the design so Python and R are runnable descriptive-QC reporters, but SQL is a separate inspection cookbook rather than part of the same reporter framework.
+
+Important principle
+-------------------
+Do not reinvent mature profiling packages.
+
+The repository should be a lightweight orchestration layer around existing profiling/summary tools, plus custom checks that are useful for analysis decisions.
+
+Core goals
+----------
+1. Python: one runnable reporter script.
+2. R: one runnable reporter script.
+3. SQL: separate step-by-step inspection snippets/cookbook.
+4. Use public or built-in example datasets where possible.
+5. Local synthetic test-data generation should be optional, not central.
+6. Generated data and reports should not be committed to Git.
+7. Keep the project simple, modular, and VS Code-friendly.
+
+Repository structure
+--------------------
+Create this structure:
+
+data-cleaning-toolkit/
+  README.md
+  .gitignore
+  requirements.txt
+  pyproject.toml
+
+  config/
+    reporter_config.example.yaml
+    schema.example.yaml
+
+  data/
+    raw/.gitkeep
+    interim/.gitkeep
+    processed/.gitkeep
+
+  reports/
+    descriptive_summary/.gitkeep
+    full_profiles/.gitkeep
+
+  python/
+    run_reporter.py
+    descriptive_qc/
+      __init__.py
+      cli.py
+      config.py
+      io.py
+      example_datasets.py
+      profile.py
+      validation.py
+      type_detection.py
+      custom_checks.py
+      report_writer.py
+      utils.py
+
+  r/
+    run_reporter.R
+    descriptive_qc/
+      config.R
+      io.R
+      example_datasets.R
+      profile.R
+      validation.R
+      report_writer.R
+      utils.R
+
+  sql/
+    README.md
+    inspection_cookbook/
+      01_row_and_column_counts.sql
+      02_missingness_checks.sql
+      03_duplicate_checks.sql
+      04_continuous_summary.sql
+      05_categorical_summary.sql
+      06_binary_summary.sql
+      07_date_checks.sql
+      08_id_integrity_checks.sql
+      09_range_and_allowed_value_checks.sql
+    dialect_notes/
+      duckdb.md
+      postgres.md
+      bigquery.md
+      sqlite.md
+    dbt_and_soda_notes.md
+
+  docs/
+    design.md
+    usage.md
+    package_comparison.md
+    example_datasets.md
+    sql_workflow.md
+
+  tests/
+    test_reporter_smoke.py
+    test_config_validation.py
+
+Optional only:
+  local/
+    create_edge_case_test_data.py
+
+Git rules
+---------
+Add these to .gitignore:
+
+local/
+data/raw/*
+data/interim/*
+data/processed/*
+reports/descriptive_summary/*.md
+reports/descriptive_summary/*.txt
+reports/full_profiles/*.html
+reports/full_profiles/*.json
+__pycache__/
+.pytest_cache/
+.venv/
+.DS_Store
+
+But keep these tracked:
+
+data/raw/.gitkeep
+data/interim/.gitkeep
+data/processed/.gitkeep
+reports/descriptive_summary/.gitkeep
+reports/full_profiles/.gitkeep
+config/reporter_config.example.yaml
+config/schema.example.yaml
+
+Python reporter
+---------------
+Implement Python first.
+
+The user should be able to run:
+
+python python/run_reporter.py --input data/raw/my_data.csv
+
+python python/run_reporter.py \
+  --input data/raw/my_data.csv \
+  --columns age sex bmi diagnosis \
+  --id-cols participant_id
+
+python python/run_reporter.py \
+  --example-dataset penguins
+
+python python/run_reporter.py \
+  --example-dataset tips
+
+python python/run_reporter.py \
+  --config config/reporter_config.example.yaml
+
+python python/run_reporter.py \
+  --input data/raw/my_data.csv \
+  --mode both
+
+Python dependencies:
+- pandas
+- numpy
+- pyyaml
+- skimpy, optional
+- ydata-profiling, optional
+- seaborn, optional only for example datasets
+- pytest
+
+Important:
+- The reporter must work without skimpy, ydata-profiling, or seaborn installed.
+- If optional packages are missing, print a clear warning and continue with the core pandas/numpy quick report.
+- Do not make optional profiling packages mandatory for basic use.
+
+Python example datasets
+-----------------------
+Create python/descriptive_qc/example_datasets.py.
+
+Support:
+- penguins, using seaborn.load_dataset("penguins") if seaborn is installed and internet/cache is available
+- tips, using seaborn.load_dataset("tips") if seaborn is installed and internet/cache is available
+- iris, using sklearn.datasets.load_iris if sklearn is installed, otherwise skip gracefully
+
+If example dataset loading fails, show a helpful message telling the user to provide --input instead.
+
+Do not commit downloaded datasets.
+
+R reporter
+----------
+Create the R reporter structure but implementation can be simpler than Python initially.
+
+The user should be able to run:
+
+Rscript r/run_reporter.R --input data/raw/my_data.csv
+Rscript r/run_reporter.R --example-dataset iris
+Rscript r/run_reporter.R --example-dataset mtcars
+Rscript r/run_reporter.R --example-dataset penguins
+
+R dependencies:
+- readr
+- dplyr
+- janitor
+- skimr
+- yaml
+- DataExplorer, optional
+- palmerpenguins, optional
+
+R example datasets:
+- iris from base R datasets
+- mtcars from base R datasets
+- penguins from palmerpenguins if installed
+
+If palmerpenguins is unavailable, continue gracefully and suggest installing it.
+
+Quick report content
+--------------------
+The quick markdown/text report should include:
+
+1. Report metadata
+   - timestamp
+   - input source
+   - selected columns
+   - ID columns
+   - report mode
+   - optional package availability
+
+2. Dataset overview
+   - rows
+   - columns
+   - memory size
+   - column names
+   - inferred variable type counts
+
+3. Column inventory
+   - column name
+   - inferred type
+   - missing count
+   - missing percentage
+   - unique count
+
+4. Missingness summary
+   - top missing variables
+   - fully missing variables
+   - high missingness variables
+
+5. Duplication summary
+   - exact duplicate rows
+   - duplicate ID combinations if ID columns are supplied
+
+6. Continuous variable summary
+   - n
+   - missing
+   - mean
+   - SD
+   - median
+   - IQR
+   - min
+   - max
+   - outlier count using IQR
+
+7. Binary variable summary
+   - counts
+   - percentages
+   - imbalance warning
+
+8. Categorical variable summary
+   - number of categories
+   - top categories
+   - rare categories
+   - high-cardinality warning
+   - possible whitespace/case inconsistency warning
+
+9. Date variable summary
+   - min date
+   - max date
+   - missingness
+   - future-date warning
+
+10. Schema checks if schema file is provided
+   - required column missing
+   - unexpected columns
+   - allowed value violations
+   - numeric range violations
+   - non-unique ID violations
+
+11. Suggested cleaning actions
+   - concise bullet list generated from warnings
+
+Type inference
+--------------
+Implement type inference, but allow config overrides.
+
+Default rules:
+- all-missing column -> empty
+- one unique non-missing value -> constant
+- datetime dtype or configured date column -> date
+- numeric with exactly 2 unique non-missing values -> binary
+- numeric with more than 10 unique non-missing values -> continuous
+- numeric with 3 to 10 unique values -> categorical_or_ordinal
+- object/string with exactly 2 unique non-missing values -> binary
+- object/string with <= high_cardinality_cutoff unique values -> categorical
+- object/string with > high_cardinality_cutoff unique values -> text_high_cardinality
+
+Config files
+------------
+Create config/reporter_config.example.yaml:
+
+input_path: null
+example_dataset: "penguins"
+output_dir: "reports/descriptive_summary"
+full_profile_dir: "reports/full_profiles"
+report_basename: "descriptive_qc_report"
+
+columns: null
+id_cols: null
+
+mode: "quick"   # quick, full, both
+
+type_overrides: {}
+date_columns: []
+
+thresholds:
+  high_missingness: 0.20
+  very_high_missingness: 0.50
+  imbalance_cutoff: 0.95
+  high_cardinality_cutoff: 50
+  rare_category_cutoff: 0.01
+  outlier_method: "iqr"
+
+privacy:
+  suppress_id_values: true
+  suppress_free_text_examples: true
+  max_category_levels_shown: 20
+  max_text_length_shown: 40
+
+Create config/schema.example.yaml:
+
+columns:
+  participant_id:
+    role: id
+    required: true
+    unique: true
+
+  age:
+    type: continuous
+    required: false
+    min: 18
+    max: 100
+
+  bmi:
+    type: continuous
+    required: false
+    min: 10
+    max: 80
+
+  sex:
+    type: binary
+    allowed_values: ["Female", "Male"]
+
+  diagnosis:
+    type: categorical
+    allowed_values: ["Control", "SCZ", "BD", "MDD"]
+
+  assessment_date:
+    type: date
+
+SQL design
+----------
+Do not implement SQL as a full runnable reporter.
+
+Instead, create a separate SQL inspection cookbook.
+
+The SQL files should be readable templates that users can copy, edit, and run step by step.
+
+Each SQL file should:
+- Explain what the query checks.
+- Use placeholders such as {{ table_name }}, {{ id_column }}, {{ continuous_column }}, {{ categorical_column }}.
+- Include comments on dialect differences where needed.
+- Prefer simple standard SQL where possible.
+- Include DuckDB/PostgreSQL-style examples when useful.
+- Do not assume one database engine.
+
+Create these files:
+
+sql/inspection_cookbook/01_row_and_column_counts.sql
+- total row count
+- approximate note for column count using information_schema where available
+
+sql/inspection_cookbook/02_missingness_checks.sql
+- missing count for one selected column
+- missing percentage for one selected column
+- template for multiple columns
+
+sql/inspection_cookbook/03_duplicate_checks.sql
+- exact duplicate rows if supported
+- duplicate ID check
+- duplicate composite ID check
+
+sql/inspection_cookbook/04_continuous_summary.sql
+- count
+- missing count
+- mean
+- standard deviation
+- min
+- max
+- approximate percentile notes where dialect-specific
+
+sql/inspection_cookbook/05_categorical_summary.sql
+- category counts
+- category percentages
+- top categories
+- rare categories
+
+sql/inspection_cookbook/06_binary_summary.sql
+- value counts
+- percentages
+- imbalance check
+
+sql/inspection_cookbook/07_date_checks.sql
+- min date
+- max date
+- missing date count
+- future date check
+
+sql/inspection_cookbook/08_id_integrity_checks.sql
+- null IDs
+- duplicate IDs
+- duplicate ID + date/visit combinations
+
+sql/inspection_cookbook/09_range_and_allowed_value_checks.sql
+- numeric range violations
+- allowed categorical value violations
+
+Also create:
+sql/README.md
+- Explain that SQL is intentionally separate from the Python/R reporter.
+- Explain how to use each SQL inspection file.
+- Explain why dbt tests or Soda Core are better for production database validation.
+
+sql/dbt_and_soda_notes.md
+- Briefly explain that for production SQL/database workflows, users should consider dbt generic tests such as not_null, unique, accepted_values, relationships, or Soda data quality checks.
+
+Optional synthetic edge-case data
+---------------------------------
+Do not make synthetic data generation the main demo.
+
+However, optionally create local/create_edge_case_test_data.py for development only.
+
+This file should be ignored by Git because local/ is in .gitignore.
+
+Use it only for testing edge cases not found in public datasets:
+- duplicate IDs
+- exact duplicate rows
+- severe class imbalance
+- inconsistent category labels
+- all-missing columns
+- mostly missing columns
+- clear numeric outliers
+
+Documentation
+-------------
+Create:
+
+README.md
+- Purpose
+- Installation
+- Quick start
+- Python examples
+- R examples
+- SQL cookbook explanation
+- Difference between quick and full mode
+- Privacy warning about reports
+
+docs/design.md
+- Explain why Python/R are runnable reporters but SQL is a separate cookbook
+- Explain profiling vs validation
+- Explain why mature packages are used where possible
+
+docs/package_comparison.md
+- Briefly compare:
+  - ydata-profiling
+  - skimpy
+  - pandera
+  - Great Expectations
+  - janitor
+  - skimr
+  - DataExplorer
+  - pointblank
+  - dbt tests
+  - Soda Core
+
+docs/example_datasets.md
+- Python example datasets:
+  - penguins
+  - tips
+  - iris if available
+- R example datasets:
+  - iris
+  - mtcars
+  - penguins if palmerpenguins installed
+- Note that some Python example datasets may require internet/cache availability.
+
+docs/sql_workflow.md
+- Suggested order for SQL checks:
+  1. row count
+  2. missingness
+  3. duplicate IDs
+  4. continuous summaries
+  5. categorical summaries
+  6. date checks
+  7. range/allowed-value checks
+
+Testing
+-------
+Create pytest tests for the Python reporter.
+
+test_reporter_smoke.py:
+- Build a small dataframe inside the test.
+- Run the quick reporter.
+- Assert the report is a string.
+- Assert it contains:
+  - missing
+  - duplicate
+  - continuous
+  - categorical
+  - suggested cleaning actions
+
+test_config_validation.py:
+- Check that config/reporter_config.example.yaml can be loaded.
+- Check defaults are filled when optional fields are absent.
+
+Implementation priority
+-----------------------
+Stage 1:
+- repository structure
+- .gitignore
+- config examples
+- Python quick reporter
+- Python example dataset loader
+- SQL inspection cookbook
+- README
+- pytest smoke tests
+
+Stage 2:
+- optional ydata-profiling full HTML mode
+- R reporter using janitor/skimr/DataExplorer where available
+
+Stage 3:
+- schema validation improvements
+- Pandera support
+- pointblank examples
+- dbt/Soda examples
+
+Please implement Stage 1 fully first.

@@ -1,0 +1,68 @@
+# ── regression_analysis.yaml ──────────────────────────────────────────────────
+# Cleaning profile for regression / statistical modelling.
+#
+# Principle: consistent variables, documented exclusions, no outcome-informed cleaning.
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: 1
+name: "regression_analysis_profile"
+description: |
+  Cleaning for regression / statistical modelling.
+  Standardises labels and missing codes. Flags outliers.
+  Does NOT impute — handle imputation separately and explicitly.
+  Does NOT apply outcome-informed exclusions.
+
+profile_notes:
+  - Define the complete-case strategy before cleaning.
+  - Check whether missingness differs by outcome BEFORE this script runs.
+  - This script flags outliers; sensitivity analyses are your responsibility.
+  - Pre-specify exclusion criteria. Do not add exclusions after seeing results.
+  - Imputation is not applied here. Use mice (R) or sklearn.impute (Python) in
+    your analysis script, fitted on training data only.
+
+input:
+  expected_unit: "one row per participant"
+  id_cols: null
+
+output:
+  save_cleaned_data: true
+  save_cleaning_log: true
+  save_validation_report: true
+  save_after_qc_report: true
+
+rules:
+
+  - step: 1
+    name: "standardise_column_names"
+    action: "standardise_column_names"
+    style: "snake_case"
+
+  - step: 2
+    name: "replace_common_missing_codes"
+    action: "replace_missing_codes"
+    columns: "all"
+    missing_codes: ["", "NA", "N/A", "Unknown", "Prefer not to say", -9, -99, 999]
+
+  - step: 3
+    name: "trim_string_columns"
+    action: "trim_whitespace"
+    columns: "string"
+
+  # ── Add column-specific rules below ────────────────────────────────────────
+  # Define exclusion criteria here as explicit filter_rows_explicit rules.
+
+  # - step: 4
+  #   name: "exclude_under_18"
+  #   action: "filter_rows_explicit"
+  #   condition: "age >= 18"
+  #   reason: "Study restricted to adults (pre-specified)"
+  #   allow_row_drop: true
+
+  # - step: 5
+  #   name: "flag_bmi_outliers"
+  #   action: "flag_outliers_iqr"
+  #   column: "bmi"
+  #   output_column: "bmi_outlier_flag"
+  #   remove: false
+
+validation: {}

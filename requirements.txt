@@ -1,0 +1,13 @@
+# ── Core (required) ───────────────────────────────────────────────────────────
+pandas>=1.5
+numpy>=1.23
+pyyaml>=6.0
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+pytest>=7.0
+
+# ── Optional profiling (install as needed) ────────────────────────────────────
+# seaborn>=0.12          # for example datasets (penguins, tips)
+# scikit-learn>=1.1      # for iris example dataset
+# skimpy>=0.0.7          # lightweight skim-style console summary
+# ydata-profiling>=4.0   # full HTML profiling report

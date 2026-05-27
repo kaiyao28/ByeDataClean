@@ -1,0 +1,75 @@
+# ── missing_codes.example.yaml ────────────────────────────────────────────────
+# Define what counts as "missing" in your dataset, beyond pandas NaN/None/NaT.
+# Copy this to missing_codes.yaml (git-ignored) and edit for your dataset.
+#
+# Why this matters:
+#   Many datasets encode missing values as strings ("-9", "Unknown", "") or
+#   numeric sentinel values (-99, 999) that pandas reads as real values.
+#   These must be converted to NaN/NULL before any profiling or analysis.
+#
+# Usage:
+#   In your cleaning script, read this file and replace these codes with NaN:
+#
+#   Python example:
+#     import yaml, pandas as pd
+#     with open('config/missing_codes.yaml') as f:
+#         mc = yaml.safe_load(f)
+#     df.replace(mc['global_string_codes'], pd.NA, inplace=True)
+#
+# ─────────────────────────────────────────────────────────────────────────────
+
+# String values that should be treated as missing across all columns.
+global_string_codes:
+  - ""            # empty string
+  - " "           # whitespace-only
+  - "NA"          # string, not R's NA
+  - "N/A"
+  - "n/a"
+  - "na"
+  - "NULL"
+  - "null"
+  - "None"
+  - "none"
+  - "Unknown"
+  - "unknown"
+  - "UNKNOWN"
+  - "Not known"
+  - "Not stated"
+  - "Not recorded"
+  - "Prefer not to say"
+  - "PNTS"
+  - "Missing"
+  - "missing"
+  - "."           # Stata/SAS missing convention
+  - "#N/A"        # Excel-style
+
+# Numeric sentinel values commonly used in clinical/survey data.
+# These should be converted to NaN in numeric columns only.
+# Applying these globally risks converting valid small values (e.g. a count of -9).
+# List the columns where each applies if possible.
+global_numeric_codes:
+  - -9
+  - -99
+  - -999
+  - 999
+  - 9999
+  - 99999
+
+# Column-specific missing codes.
+# These override global codes for the named columns.
+column_specific_codes:
+  # Example: in a clinical score column, 0 may mean "not assessed" not a zero score
+  # clinical_score:
+  #   - 0
+  #   - -1
+
+  # Example: in age column, -1 might be used for "age unknown"
+  # age:
+  #   - -1
+
+# Notes:
+# - After applying missing codes, re-run the QC reporter to confirm missingness
+#   percentages are now correct.
+# - Keep a record of which codes were found and replaced in your cleaning decision log.
+# - Do not add a sentinel to global_numeric_codes unless you have confirmed it
+#   appears in multiple columns as a missing indicator.
