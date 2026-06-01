@@ -34,9 +34,19 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_object_dtype, is_string_dtype
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
+
+
+def _is_text_dtype(series: pd.Series) -> bool:
+    """Return True for object or pandas StringDtype columns.
+
+    Pandas 2.0+ may infer StringDtype instead of object for string columns,
+    so checking is_object_dtype alone misses them on newer versions.
+    """
+    return is_object_dtype(series) or is_string_dtype(series)
 
 def _step_log(
     rows_before: int,
@@ -67,7 +77,7 @@ def _to_snake(name: str) -> str:
 
 
 def _string_cols(df: pd.DataFrame) -> list[str]:
-    return [c for c in df.columns if pd.api.types.is_object_dtype(df[c])]
+    return [c for c in df.columns if _is_text_dtype(df[c])]
 
 
 def _resolve_columns(df: pd.DataFrame, col_spec: Any) -> list[str]:
@@ -169,7 +179,7 @@ def action_replace_missing_codes(
     df_out = df.copy()
     for col in cols:
         before = df_out[col].isna().sum()
-        if pd.api.types.is_object_dtype(df_out[col]):
+        if _is_text_dtype(df_out[col]):
             df_out[col] = df_out[col].replace(str_codes + [str(n) for n in num_codes], np.nan)
             df_out[col] = df_out[col].replace(num_codes, np.nan)
         else:
@@ -191,7 +201,7 @@ def action_trim_whitespace(
 ) -> tuple[pd.DataFrame, dict]:
     col_spec = rule.get("columns", "string")
     cols = [c for c in _resolve_columns(df, col_spec) if c in df.columns]
-    cols = [c for c in cols if pd.api.types.is_object_dtype(df[c])]
+    cols = [c for c in cols if _is_text_dtype(df[c])]
 
     total_changed = 0
     df_out = df.copy()
@@ -215,7 +225,7 @@ def action_standardise_case(
     case: str = rule.get("case", "lower")
     col_spec  = rule.get("columns", "string")
     cols = [c for c in _resolve_columns(df, col_spec) if c in df.columns]
-    cols = [c for c in cols if pd.api.types.is_object_dtype(df[c])]
+    cols = [c for c in cols if _is_text_dtype(df[c])]
 
     total_changed = 0
     df_out = df.copy()
