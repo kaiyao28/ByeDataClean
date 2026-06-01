@@ -1,0 +1,35 @@
+flowchart LR
+
+  N0["Raw data<br/>Rows: 50<br/>Columns: 7<br/>Missing cells: 14<br/>Duplicate rows: 1"]
+  N1["Step 1: standardise_column_names<br/>(standardise_column_names)"]
+  N2["Step 2: replace_missing_codes<br/>(replace_missing_codes)<br/>Cells changed: 2"]
+  N3["Step 3: trim_whitespace<br/>(trim_whitespace)<br/>Cells changed: 5"]
+  N4["Step 4: harmonise_sex_labels<br/>(map_categories)<br/>Cells changed: 7"]
+  N5["Step 5: standardise_diagnosis_case<br/>(map_categories)<br/>Cells changed: 1"]
+  N6["Step 6: set_invalid_age_to_missing<br/>(set_invalid_to_missing)<br/>Cells changed: 2"]
+  N7["Step 7: flag_bmi_outliers<br/>(flag_outliers_iqr)<br/>Outliers flagged: 1<br/>Columns added: 1"]
+  N8["Step 8: add_missingness_flags<br/>(create_missingness_flags)<br/>Cells changed: 4<br/>Columns added: 4"]
+  N9["Step 9: remove_exact_duplicates<br/>(remove_exact_duplicates)<br/>Rows removed: 1<br/>⚠ DESTRUCTIVE"]
+  N10["Validation<br/>Passed: 8<br/>Failed: 1"]
+  N11["Cleaned data<br/>Rows: 49<br/>Columns: 12<br/>Missing cells: 17<br/>Duplicate rows: 0"]
+
+  N0 --> N1 --> N2 --> N3 --> N4 --> N5 --> N6 --> N7 --> N8 --> N9 --> N10 --> N11
+
+  classDef input_node       fill:#e8f1ff,stroke:#2b6cb0,stroke-width:2px;
+  classDef clean_step       fill:#f7fafc,stroke:#4a5568,stroke-width:1px;
+  classDef destructive_step fill:#ffe8e8,stroke:#c53030,stroke-width:2px;
+  classDef warning_step     fill:#fff8db,stroke:#d69e2e,stroke-width:2px;
+  classDef validation_node  fill:#e6fffa,stroke:#319795,stroke-width:2px;
+  classDef output_node      fill:#e9ffe8,stroke:#2f855a,stroke-width:2px;
+  class N0 input_node;
+  class N11 output_node;
+  class N10 warning_step;
+  class N1 clean_step;
+  class N2 clean_step;
+  class N3 clean_step;
+  class N4 clean_step;
+  class N5 clean_step;
+  class N6 clean_step;
+  class N7 clean_step;
+  class N8 clean_step;
+  class N9 destructive_step;

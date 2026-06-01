@@ -1,16 +1,16 @@
 # ── example_cleaning_rules.yaml ───────────────────────────────────────────────
-# Pre-built cleaning rules for data/raw/example_dirty_data.csv.
+# Pre-built cleaning rules for data/examples/example_dirty_data.csv.
 # Use as a working demo and as a template for your own rules.
 #
 # Run dry-run first:
 #   python python/run_cleaner.py \
-#     --input data/raw/example_dirty_data.csv \
+#     --input data/examples/example_dirty_data.csv \
 #     --rules config/example_cleaning_rules.yaml \
 #     --dry-run
 #
 # Then apply:
 #   python python/run_cleaner.py \
-#     --input  data/raw/example_dirty_data.csv \
+#     --input  data/examples/example_dirty_data.csv \
 #     --rules  config/example_cleaning_rules.yaml \
 #     --output data/processed/example_cleaned.csv \
 #     --confirm-destructive \

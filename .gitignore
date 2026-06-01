@@ -13,8 +13,8 @@ reports/validation_reports/*.md
 reports/validation_reports/*.txt
 
 # Keep directory sentinels
+# (data/examples/ is not ignored — all files there are committed)
 !data/raw/.gitkeep
-!data/raw/example_dirty_data.csv
 !data/interim/.gitkeep
 !data/processed/.gitkeep
 !reports/descriptive_summary/.gitkeep

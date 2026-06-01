@@ -28,11 +28,13 @@
 - `--flowchart` flag: generates `.mmd` and `.md` Mermaid flow diagrams (no extra packages required)
 - Step Impact Summary table always included in cleaning log
 - Unified `python/toolkit/` internal package
-- 128 pytest tests (unit + integration + flowchart + full-loop)
+- 130 pytest tests (unit + integration + flowchart + full-loop)
+- `--mode full` / `--mode both`: HTML profile via ydata-profiling (requires `pip install ydata-profiling`)
+- Validation fail-fast mode (`validation: fail_on_error: true`)
+- Manager-friendly cleaning summary generated alongside every cleaning log
 
 ## Stage 4 — planned
 
-- Full HTML profiling mode via ydata-profiling (Python) ← **partially implemented**: `--mode full` calls ydata-profiling when installed; requires `pip install ydata-profiling`
 - Full HTML profiling mode via DataExplorer (R)
 - Complete R cleaning executor (`run_cleaner.R`)
 - Pandera schema validation integration

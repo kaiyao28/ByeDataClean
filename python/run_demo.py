@@ -40,7 +40,7 @@ if _cwd.name == "python":
     )
     sys.exit(1)
 
-_EXAMPLE_INPUT   = _repo_root / "data" / "raw" / "example_dirty_data.csv"
+_EXAMPLE_INPUT   = _repo_root / "data" / "examples" / "example_dirty_data.csv"
 _EXAMPLE_RULES   = _repo_root / "config" / "example_cleaning_rules.yaml"
 _EXAMPLE_OUTPUT  = _repo_root / "data" / "processed" / "example_cleaned.csv"
 _LOG_DIR         = _repo_root / "reports" / "cleaning_logs"
@@ -196,6 +196,8 @@ def main() -> None:
     print(f"  Cleaned data:   {len(cleaned_df):,} rows × {len(cleaned_df.columns)} columns")
     print(f"\n  Reports and logs saved under reports/")
     print(f"  Cleaned file:  {_EXAMPLE_OUTPUT.relative_to(_repo_root)}")
+    print(f"\n  Demo outputs are safe to delete — they are ignored by git.")
+    print(f"  (data/processed/ and reports/ are both in .gitignore)")
     print(f"\n  Try your own data:")
     print(f"    python python/run_reporter.py --input data/raw/YOUR_FILE.csv")
     print()

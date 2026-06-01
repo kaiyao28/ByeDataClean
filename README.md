@@ -1,5 +1,9 @@
 # ByeDataClean
 
+[![Tests](https://github.com/kaiyao28/ByeDataClean/actions/workflows/tests.yml/badge.svg)](https://github.com/kaiyao28/ByeDataClean/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+
 A lightweight toolkit for profiling, deciding, and cleaning tabular data — with reproducible YAML rules, before/after logs, and visual audit flowcharts.
 
 > **Privacy reminder:** Do not commit raw data or share reports without reviewing them first. Reports may contain column names, category labels, and summary statistics from your dataset. See [Safety defaults](#safety-defaults) and [docs/i_have_a_csv_what_do_i_do.md](docs/i_have_a_csv_what_do_i_do.md#what-is-safe-to-share).
@@ -8,7 +12,7 @@ A lightweight toolkit for profiling, deciding, and cleaning tabular data — wit
 
 ## Why use this?
 
-- Profile CSV, TSV, Excel, or Parquet files in under 5 minutes — no code required.
+- Profile CSV, TSV, Excel, or Parquet files in under 5 minutes — no Python coding required, only CLI commands.
 - Identify missingness, duplicates, outliers, invalid ranges, and category inconsistencies.
 - Use structured decision guides to choose how to act on each finding.
 - Apply explicit YAML cleaning rules that describe every step and your rationale.
@@ -109,7 +113,7 @@ See [docs/installation.md](docs/installation.md) for optional packages and R set
 A small dirty dataset is included — 50 rows with realistic issues:
 
 ```bash
-python python/run_reporter.py --input data/raw/example_dirty_data.csv
+python python/run_reporter.py --input data/examples/example_dirty_data.csv
 ```
 
 The report will flag: 22% missing BMI, duplicate IDs, an age outlier (999), inconsistent sex labels, and a future assessment date.
@@ -120,7 +124,7 @@ A matching rules file is included — no editing needed to run the demo:
 
 ```bash
 python python/run_cleaner.py \
-  --input data/raw/example_dirty_data.csv \
+  --input data/examples/example_dirty_data.csv \
   --rules config/example_cleaning_rules.yaml \
   --dry-run
 ```
@@ -131,7 +135,7 @@ Simulates every step and writes a log without touching the data. Review the log,
 
 ```bash
 python python/run_cleaner.py \
-  --input  data/raw/example_dirty_data.csv \
+  --input  data/examples/example_dirty_data.csv \
   --rules  config/example_cleaning_rules.yaml \
   --output data/processed/example_cleaned.csv \
   --confirm-destructive \

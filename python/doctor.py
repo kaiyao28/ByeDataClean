@@ -126,7 +126,7 @@ def main() -> None:
     example_csv   = cwd / "data" / "raw" / "example_dirty_data.csv"
     example_rules = cwd / "config" / "example_cleaning_rules.yaml"
     _check(
-        "data/raw/example_dirty_data.csv",
+        "data/examples/example_dirty_data.csv",
         example_csv.exists(),
         fix="Make sure you cloned the full repository.",
     )
