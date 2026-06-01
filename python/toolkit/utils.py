@@ -40,7 +40,7 @@ def print_banner(dry_run: bool) -> None:
     mode = "DRY RUN — no output will be written" if dry_run else "CLEAN RUN"
     width = 60
     print("─" * width)
-    print(f"  data-cleaning-toolkit  │  {mode}")
+    print(f"  ByeDataClean  │  {mode}")
     print("─" * width)
 
 

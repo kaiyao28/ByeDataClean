@@ -1,6 +1,8 @@
-# data-cleaning-toolkit
+# ByeDataClean
 
 A lightweight toolkit for profiling, deciding, and cleaning tabular data — with reproducible YAML rules, before/after logs, and visual audit flowcharts.
+
+> **Privacy reminder:** Do not commit raw data or share reports without reviewing them first. Reports may contain column names, category labels, and summary statistics from your dataset. See [Safety defaults](#safety-defaults) and [docs/i_have_a_csv_what_do_i_do.md](docs/i_have_a_csv_what_do_i_do.md#what-is-safe-to-share).
 
 ---
 
@@ -83,6 +85,14 @@ Blue = raw data · Grey = standard step · Yellow = warning · Red = destructive
 ---
 
 ## Quick start
+
+### 0. One-command demo (no data needed)
+
+```bash
+python python/run_demo.py
+```
+
+Runs the full Profile → Dry-run → Clean → Flowchart loop on the bundled example dataset. No internet required. Prints all output paths when done.
 
 ### 1. Install
 
@@ -170,7 +180,25 @@ Data and reports are never committed — `data/` and `reports/` are git-ignored.
 
 ---
 
+## Config files at a glance
+
+| File | Used by | Controls | Do beginners need to edit it? |
+|---|---|---|---|
+| `config/reporter_config.example.yaml` | `run_reporter.py` | Columns, thresholds, privacy, output dir | Optional — CLI flags cover most needs |
+| `config/schema.example.yaml` | `run_reporter.py --schema` | Expected column types, ranges, allowed values | Optional — for stricter input checks |
+| `config/cleaning_rules.example.yaml` | `run_cleaner.py` | Every cleaning step, rationale, validation | **Yes** — copy and edit for each project |
+| `config/example_cleaning_rules.yaml` | `run_cleaner.py` / `run_demo.py` | Demo rules for the bundled example dataset | No — demo only |
+| `config/cleaning_profiles/*.yaml` | `run_cleaner.py` | Pre-built rule sets for common analysis types | Optional — good starting point |
+| `config/category_mapping.example.yaml` | Referenced by `map_categories` rules | Reusable label mappings (sex, diagnosis, etc.) | Optional — useful for shared codelists |
+
+---
+
 ## Documentation
+
+**New to this tool?** Start here:
+- [docs/i_have_a_csv_what_do_i_do.md](docs/i_have_a_csv_what_do_i_do.md) — step-by-step from raw file to cleaned output
+- [docs/yaml_for_beginners.md](docs/yaml_for_beginners.md) — editing YAML rules safely
+- [docs/glossary.md](docs/glossary.md) — plain-language definitions
 
 | Need | Read |
 |---|---|
@@ -195,10 +223,10 @@ Data and reports are never committed — `data/` and `reports/` are git-ignored.
 python -m pytest
 ```
 
-128 tests. See [docs/development.md](docs/development.md) for the full breakdown.
+130 tests. See [docs/development.md](docs/development.md) for the full breakdown.
 
 ---
 
 ## License
 
-_Placeholder — add your preferred licence before making this repository public._
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.

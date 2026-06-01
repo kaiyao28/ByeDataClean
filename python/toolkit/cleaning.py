@@ -18,6 +18,7 @@ from toolkit.audit import before_after_summary, snapshot
 from toolkit.config import validate_rules
 from toolkit.log_writer import (
     build_cleaning_log,
+    build_manager_summary,
     build_run_manifest,
     build_validation_report,
     write_log,
@@ -126,8 +127,9 @@ def run_cleaning_pipeline(
     ba_summary = before_after_summary(before, after)
 
     # ── 4. Validation ─────────────────────────────────────────────────────────
-    validation_cfg = rules.get("validation", {}) or {}
-    val_results    = run_validation(cleaned, validation_cfg)
+    validation_cfg   = rules.get("validation", {}) or {}
+    fail_on_error    = bool(validation_cfg.get("fail_on_error", False))
+    val_results      = run_validation(cleaned, validation_cfg)
 
     val_summary = {
         "passed": sum(1 for r in val_results if r.passed),
@@ -136,8 +138,16 @@ def run_cleaning_pipeline(
 
     n_fail = val_summary["failed"]
     if n_fail > 0:
-        print(f"\n  ⚠️  Validation: {n_fail} check(s) failed — see validation report.",
-              file=sys.stderr)
+        if fail_on_error:
+            print(
+                f"\n  ✗ Validation failed: {n_fail} check(s) did not pass.",
+                file=sys.stderr,
+            )
+        else:
+            print(
+                f"\n  ⚠️  Validation: {n_fail} check(s) failed — see validation report.",
+                file=sys.stderr,
+            )
     elif val_results:
         print(f"  ✓ Validation: all {len(val_results)} check(s) passed.")
 
@@ -205,7 +215,27 @@ def run_cleaning_pipeline(
     val_path = write_log(val_report,   validation_dir, f"{rules_name}_validation")
     man_path = write_manifest(manifest, log_dir, rules_name)
 
+    # Manager summary (always written alongside the cleaning log)
+    flow_md_path = None
+    if flowchart:
+        flow_candidates = sorted(Path(log_dir).glob(f"{rules_name}_*_flow.md"))
+        if flow_candidates:
+            flow_md_path = flow_candidates[-1]
+
+    mgr_summary = build_manager_summary(
+        input_path=input_path,
+        output_path=output_path,
+        before_snap=before,
+        after_snap=after,
+        step_results=step_results,
+        validation_results=val_results,
+        log_path=log_path,
+        flowchart_path=flow_md_path,
+    )
+    mgr_path = write_log(mgr_summary, log_dir, f"{rules_name}_summary")
+
     print(f"\n  ✓ Cleaning log  → {log_path}")
+    print(f"  ✓ Summary       → {mgr_path}")
     print(f"  ✓ Validation    → {val_path}")
     print(f"  ✓ Run manifest  → {man_path}")
 

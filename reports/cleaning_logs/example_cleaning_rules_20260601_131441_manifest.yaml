@@ -1,0 +1,17 @@
+timestamp: '2026-06-01T13:14:41'
+dry_run: false
+input_file: /Users/mpmky/Documents/ByeDataClean/data/raw/example_dirty_data.csv
+output_file: /Users/mpmky/Documents/ByeDataClean/data/processed/example_cleaned.csv
+rules_file: /Users/mpmky/Documents/ByeDataClean/config/example_cleaning_rules.yaml
+git_commit: '8806531'
+python_version: 3.14.0
+package_versions:
+  pandas: 2.3.3
+  numpy: 2.4.2
+  pyyaml: 6.0.3
+rows_before: 50
+rows_after: 49
+columns_before: 7
+columns_after: 12
+missing_cells_before: 14
+missing_cells_after: 17

@@ -268,6 +268,110 @@ def build_run_manifest(
     }
 
 
+# ── Manager summary ──────────────────────────────────────────────────────────
+
+def build_manager_summary(
+    input_path: str,
+    output_path: str | None,
+    before_snap: dict[str, Any],
+    after_snap: dict[str, Any],
+    step_results: list[dict[str, Any]],
+    validation_results: list[ValidationResult],
+    log_path: str | Path | None = None,
+    flowchart_path: str | Path | None = None,
+) -> str:
+    """Build a short non-technical summary suitable for a manager or collaborator.
+
+    Focuses on *what changed* and *whether the data is clean*, using plain language
+    rather than technical terms.
+    """
+    ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+    lines: list[str] = []
+    a = lines.append
+
+    a("# Cleaning Summary\n")
+    a(f"_Generated {ts}_\n")
+    a(f"- **Input:**  `{input_path}`")
+    a(f"- **Output:** `{output_path or 'not written (dry run)'}`\n")
+
+    # ── What changed ──────────────────────────────────────────────────────────
+    a("## What changed\n")
+
+    rows_before = before_snap["n_rows"]
+    rows_after  = after_snap["n_rows"]
+    cols_before = before_snap["n_cols"]
+    cols_after  = after_snap["n_cols"]
+    miss_before = before_snap["n_missing_cells"]
+    miss_after  = after_snap["n_missing_cells"]
+
+    a(f"- Started with **{rows_before:,} rows** and **{cols_before} columns**.")
+
+    rows_removed = rows_before - rows_after
+    if rows_removed > 0:
+        a(f"- Removed **{rows_removed:,} duplicate row(s)**.")
+    cols_added = cols_after - cols_before
+    if cols_added > 0:
+        a(f"- Added **{cols_added} new column(s)** (e.g. missingness flags, outlier flags).")
+
+    # Summarise actions in plain language
+    action_labels = {
+        "replace_missing_codes":     "Replaced missing-data codes (e.g. NA, Unknown, -9) with blank.",
+        "trim_whitespace":           "Removed leading and trailing spaces from text fields.",
+        "standardise_column_names":  "Standardised column names to lowercase with underscores.",
+        "map_categories":            "Standardised category labels (e.g. inconsistent capitalisation).",
+        "standardise_case":          "Standardised text case in category columns.",
+        "set_invalid_to_missing":    "Set impossible numeric values (e.g. age = -5) to blank.",
+        "flag_outliers_iqr":         "Flagged statistical outliers for review.",
+        "create_missingness_flags":  "Added indicator columns recording which values were originally missing.",
+        "remove_exact_duplicates":   "Removed exact duplicate rows.",
+        "parse_dates":               "Converted text columns to date format.",
+    }
+    seen_actions: set[str] = set()
+    for sr in step_results:
+        action = sr.get("action", "")
+        if action not in seen_actions and action in action_labels:
+            cells = sr["log"].get("cells_changed", 0)
+            label = action_labels[action]
+            if cells:
+                a(f"- {label} ({cells:,} cells affected)")
+            else:
+                a(f"- {label}")
+            seen_actions.add(action)
+
+    a(f"\n- Ended with **{rows_after:,} rows** and **{cols_after} columns**.")
+
+    miss_delta = miss_before - miss_after
+    if miss_delta > 0:
+        a(f"- Missing values reduced by **{miss_delta:,}** (from {miss_before:,} to {miss_after:,}).")
+    elif miss_after > miss_before:
+        a(f"- Missing values increased by **{miss_after - miss_before:,}** (intentional: impossible values set to blank).")
+
+    # ── Data checks ───────────────────────────────────────────────────────────
+    a("\n## Data checks after cleaning\n")
+    if not validation_results:
+        a("_No validation checks were configured._")
+    else:
+        passed = [r for r in validation_results if r.passed]
+        failed = [r for r in validation_results if not r.passed]
+        total  = len(validation_results)
+        if not failed:
+            a(f"✓ All {total} data checks passed.")
+        else:
+            a(f"⚠ {len(passed)} of {total} checks passed. {len(failed)} need review:")
+            for r in failed:
+                a(f"  - {r.message}")
+
+    # ── Output paths ──────────────────────────────────────────────────────────
+    a("\n## Where to find the full details\n")
+    if log_path:
+        a(f"- Full cleaning log: `{log_path}`")
+    if flowchart_path:
+        a(f"- Visual flowchart:  `{flowchart_path}`")
+    a(f"- Cleaned data:      `{output_path or 'not written'}`")
+
+    return "\n".join(lines)
+
+
 # ── File writers ──────────────────────────────────────────────────────────────
 
 def write_log(content: str, directory: str | Path, basename: str) -> Path:

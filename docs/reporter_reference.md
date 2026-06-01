@@ -30,6 +30,8 @@ python python/run_reporter.py [options]
 
 ## Report modes
 
+All three modes are implemented. `full` and `both` require ydata-profiling.
+
 | Mode | Output | Extra requirement |
 |---|---|---|
 | `quick` | Markdown summary in `reports/descriptive_summary/` | None |

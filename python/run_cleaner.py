@@ -134,6 +134,19 @@ def main() -> None:
         flowchart=args.flowchart,
     )
 
+    # ── Fail-fast validation guard ─────────────────────────────────────────────
+    _val_cfg   = rules.get("validation", {}) or {}
+    _fail_fast = bool(_val_cfg.get("fail_on_error", False))
+    _val_failed = "✗" in _val_report or "Failed:" in _val_report
+
+    if _fail_fast and _val_failed and not args.dry_run:
+        print(
+            "\n  Validation failed. Cleaned file was not written.\n"
+            "  Review the validation report, fix the rules, and re-run.",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+
     # ── Save cleaned data ──────────────────────────────────────────────────────
     if not args.dry_run and output_path:
         write_file(cleaned_df, output_path)

@@ -32,7 +32,7 @@
 
 ## Stage 4 — planned
 
-- Full HTML profiling mode via ydata-profiling (Python)
+- Full HTML profiling mode via ydata-profiling (Python) ← **partially implemented**: `--mode full` calls ydata-profiling when installed; requires `pip install ydata-profiling`
 - Full HTML profiling mode via DataExplorer (R)
 - Complete R cleaning executor (`run_cleaner.R`)
 - Pandera schema validation integration

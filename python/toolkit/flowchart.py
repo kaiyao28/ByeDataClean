@@ -290,7 +290,7 @@ def write_flowchart_files(
     # .md file with an embedded Mermaid code fence
     md_content = (
         "# Cleaning Flow Diagram\n\n"
-        "_Rendered automatically by the data-cleaning-toolkit. "
+        "_Rendered automatically by ByeDataClean. "
         "Open this file in GitHub, GitLab, Quarto, or MkDocs to see the diagram._\n\n"
         "```mermaid\n"
         + mermaid_text

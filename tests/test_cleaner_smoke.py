@@ -233,6 +233,44 @@ def test_validation_passes_when_data_is_clean(tmp_path):
     assert "passed" in val.lower()
 
 
+def test_validation_fail_on_error_sets_message(tmp_path):
+    """fail_on_error: true — validation failure is clearly marked in the report."""
+    df = pd.DataFrame({"other_col": [1, 2, 3]})
+    rules = {
+        "version": 1, "name": "fail_fast_test", "rules": [],
+        "validation": {
+            "required_columns": ["participant_id"],
+            "fail_on_error": True,
+        },
+    }
+    _, _, val = run_cleaning_pipeline(
+        df, rules,
+        log_dir=str(tmp_path / "logs"),
+        validation_dir=str(tmp_path / "val"),
+    )
+    assert "participant_id" in val
+    assert "failed" in val.lower() or "✗" in val
+
+
+def test_validation_advisory_mode_still_returns(tmp_path):
+    """Without fail_on_error the pipeline completes even when validation fails."""
+    df = pd.DataFrame({"other_col": [1, 2, 3]})
+    rules = {
+        "version": 1, "name": "advisory_test", "rules": [],
+        "validation": {
+            "required_columns": ["participant_id"],
+            "fail_on_error": False,
+        },
+    }
+    cleaned, log, val = run_cleaning_pipeline(
+        df, rules,
+        log_dir=str(tmp_path / "logs"),
+        validation_dir=str(tmp_path / "val"),
+    )
+    assert isinstance(cleaned, pd.DataFrame)
+    assert "participant_id" in val
+
+
 # ── 5. Log files written to disk ─────────────────────────────────────────────
 
 def test_log_files_are_written(raw_df, tmp_path):
@@ -243,8 +281,9 @@ def test_log_files_are_written(raw_df, tmp_path):
         log_dir=str(log_dir),
         validation_dir=str(val_dir),
     )
-    assert len(list(log_dir.glob("*.md")))   == 1
-    assert len(list(val_dir.glob("*.md")))   == 1
+    assert len(list(log_dir.glob("*_cleaning_log_*.md"))) == 1  # cleaning log
+    assert len(list(log_dir.glob("*_summary_*.md")))     == 1  # manager summary
+    assert len(list(val_dir.glob("*.md")))               == 1
     # Run manifest (.yaml) is also written alongside the log
     assert len(list(log_dir.glob("*.yaml"))) == 1
 
@@ -256,7 +295,7 @@ def test_log_file_content_matches_returned_string(raw_df, tmp_path):
         log_dir=str(log_dir),
         validation_dir=str(tmp_path / "val"),
     )
-    written = next(log_dir.glob("*.md")).read_text(encoding="utf-8")
+    written = next(log_dir.glob("*_cleaning_log_*.md")).read_text(encoding="utf-8")
     assert written == log
 
 
@@ -268,7 +307,7 @@ def test_log_files_written_even_in_dry_run(raw_df, tmp_path):
         log_dir=str(log_dir),
         validation_dir=str(tmp_path / "val"),
     )
-    assert len(list(log_dir.glob("*.md"))) == 1
+    assert len(list(log_dir.glob("*_cleaning_log_*.md"))) == 1
 
 
 # ── 6. Dry-run leaves the DataFrame unchanged ─────────────────────────────────

@@ -224,7 +224,7 @@ def test_full_loop_dry_run_does_not_write_cleaned_file(toy_csv, cleaning_rules, 
     assert not cleaned_csv.exists()
 
     # But the log was written
-    assert len(list((tmp_path / "logs").glob("*.md"))) == 1
+    assert len(list((tmp_path / "logs").glob("*_cleaning_log_*.md"))) == 1
     assert "DRY RUN" in log.upper() or "dry run" in log.lower()
 
 
@@ -276,7 +276,7 @@ def test_full_loop_cleaning_log_written(toy_csv, cleaning_rules, tmp_path):
         validation_dir=str(tmp_path / "val"),
     )
 
-    log_files = list(log_dir.glob("*.md"))
+    log_files = list(log_dir.glob("*_cleaning_log_*.md"))
     assert len(log_files) == 1
     content = log_files[0].read_text(encoding="utf-8")
     for section in ("# Cleaning Log", "## Run Metadata", "## Step Summary",
