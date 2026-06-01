@@ -1,0 +1,167 @@
+# ── example_cleaning_rules.yaml ───────────────────────────────────────────────
+# Pre-built cleaning rules for data/raw/example_dirty_data.csv.
+# Use as a working demo and as a template for your own rules.
+#
+# Run dry-run first:
+#   python python/run_cleaner.py \
+#     --input data/raw/example_dirty_data.csv \
+#     --rules config/example_cleaning_rules.yaml \
+#     --dry-run
+#
+# Then apply:
+#   python python/run_cleaner.py \
+#     --input  data/raw/example_dirty_data.csv \
+#     --rules  config/example_cleaning_rules.yaml \
+#     --output data/processed/example_cleaned.csv \
+#     --confirm-destructive \
+#     --after-report \
+#     --flowchart
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: 1
+name: "example_cleaning_rules"
+
+metadata:
+  analyst: "demo"
+  analysis_purpose: "example walkthrough — cross-sectional descriptive analysis"
+  expected_unit: "one row per participant"
+  notes: >
+    Cleaning rules for the bundled example dataset. Each step illustrates a
+    common cleaning action with decision_status and rationale documented.
+
+safety:
+  allow_row_drop: true      # needed for step 9 (remove_exact_duplicates)
+  allow_column_drop: false
+
+rules:
+
+  - step: 1
+    name: "standardise_column_names"
+    action: "standardise_column_names"
+    decision_status: "approved"
+    rationale: >
+      All column names converted to snake_case for consistency with
+      downstream scripts and SQL queries.
+
+  - step: 2
+    name: "replace_missing_codes"
+    action: "replace_missing_codes"
+    columns: "all"
+    missing_codes:
+      - ""
+      - "NA"
+      - "Unknown"
+      - -9
+    decision_status: "approved"
+    rationale: >
+      Empty strings, "NA", and "Unknown" are sentinel values from the data
+      export, not real categories. Score -9 is a study-specific missing-data
+      code documented in the data dictionary.
+
+  - step: 3
+    name: "trim_whitespace"
+    action: "trim_whitespace"
+    columns: "string"
+    decision_status: "approved"
+    rationale: >
+      Leading and trailing whitespace found in sex (" Female ") and
+      diagnosis (" SCZ "). Never intentional — caused by spreadsheet export.
+
+  - step: 4
+    name: "harmonise_sex_labels"
+    action: "map_categories"
+    column: "sex"
+    mapping:
+      male:   "Male"
+      MALE:   "Male"
+      M:      "Male"
+      female: "Female"
+      FEMALE: "Female"
+      F:      "Female"
+    unmatched_action: "warn"
+    decision_status: "approved"
+    rationale: >
+      Source data contains abbreviated and case-inconsistent sex labels.
+      All unique values reviewed. Two-category encoding (Male/Female)
+      is correct for this cohort — no non-binary labels present.
+
+  - step: 5
+    name: "standardise_diagnosis_case"
+    action: "map_categories"
+    column: "diagnosis"
+    mapping:
+      control: "Control"
+    unmatched_action: "keep"
+    decision_status: "approved"
+    rationale: >
+      One record has diagnosis = "control" (lowercase) from a manual entry.
+      All other values already use the expected capitalisation.
+
+  - step: 6
+    name: "set_invalid_age_to_missing"
+    action: "set_invalid_to_missing"
+    column: "age"
+    min: 18
+    max: 100
+    decision_status: "approved"
+    rationale: >
+      Ages of -5 and 999 are biologically impossible for this adult cohort
+      (inclusion criteria: 18–65). Setting to missing rather than removing
+      rows preserves the other variables for those participants.
+
+  - step: 7
+    name: "flag_bmi_outliers"
+    action: "flag_outliers_iqr"
+    column: "bmi"
+    output_column: "bmi_outlier_flag"
+    remove: false
+    decision_status: "approved"
+    rationale: >
+      IQR method identifies one extreme BMI value (120). Flagging only at
+      this stage — analyst will review the source record before deciding
+      whether to set to missing or retain as a genuine extreme.
+
+  - step: 8
+    name: "add_missingness_flags"
+    action: "create_missingness_flags"
+    columns: "all"
+    only_if_any_missing: true
+    suffix: "_missing_flag"
+    decision_status: "approved"
+    rationale: >
+      BMI (22% missing) and age (2 values set to missing by step 6) need
+      indicator variables for missing-at-random sensitivity analyses.
+
+  - step: 9
+    name: "remove_exact_duplicates"
+    action: "remove_exact_duplicates"
+    allow_row_drop: true
+    decision_status: "approved"
+    rationale: >
+      Participant ID 3 appears twice with identical values on all columns.
+      Confirmed as an accidental double-export — same values, same date.
+      Exact duplicate only; no partial duplicate logic needed.
+
+# ── Validation (runs automatically after cleaning) ────────────────────────────
+
+validation:
+  required_columns:
+    - participant_id
+    - age
+    - sex
+    - diagnosis
+
+  unique_keys:
+    - [participant_id]
+
+  accepted_values:
+    sex:       ["Male", "Female"]
+    diagnosis: ["Control", "SCZ", "BD", "MDD"]
+
+  ranges:
+    age:
+      min: 18
+      max: 100
+    bmi:
+      min: 10
+      max: 80

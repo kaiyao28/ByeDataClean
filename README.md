@@ -94,44 +94,44 @@ pip install -r requirements.txt
 
 See [docs/installation.md](docs/installation.md) for optional packages and R setup.
 
-### 2. Run a QC report
+### 2. Profile the example dataset
+
+A small dirty dataset is included — 50 rows with realistic issues:
 
 ```bash
-python python/run_reporter.py --input data/raw/my_data.csv
+python python/run_reporter.py --input data/raw/example_dirty_data.csv
 ```
 
-Or try a built-in example (requires `pip install seaborn`):
-
-```bash
-python python/run_reporter.py --example-dataset penguins
-```
+The report will flag: 22% missing BMI, duplicate IDs, an age outlier (999), inconsistent sex labels, and a future assessment date.
 
 ### 3. Preview cleaning (dry run)
 
-```bash
-cp config/cleaning_rules.example.yaml config/my_cleaning_rules.yaml
-# Edit my_cleaning_rules.yaml with your decisions and rationale
+A matching rules file is included — no editing needed to run the demo:
 
+```bash
 python python/run_cleaner.py \
-  --input data/raw/my_data.csv \
-  --rules config/my_cleaning_rules.yaml \
+  --input data/raw/example_dirty_data.csv \
+  --rules config/example_cleaning_rules.yaml \
   --dry-run
 ```
 
-Counts every change without writing output. Review the log, adjust the rules, repeat.
+Simulates every step and writes a log without touching the data. Review the log, adjust rules, repeat.
 
 ### 4. Apply cleaning
 
 ```bash
 python python/run_cleaner.py \
-  --input  data/raw/my_data.csv \
-  --rules  config/my_cleaning_rules.yaml \
-  --output data/processed/my_data_cleaned.csv \
+  --input  data/raw/example_dirty_data.csv \
+  --rules  config/example_cleaning_rules.yaml \
+  --output data/processed/example_cleaned.csv \
+  --confirm-destructive \
   --after-report \
   --flowchart
 ```
 
-If your rules drop rows or columns, also add `--confirm-destructive`.
+`--confirm-destructive` is required because the rules include `remove_exact_duplicates`.
+
+> **Using your own data?** Replace `example_dirty_data.csv` and `example_cleaning_rules.yaml` with your own paths. Copy `config/cleaning_rules.example.yaml` as a starting template.
 
 ---
 
