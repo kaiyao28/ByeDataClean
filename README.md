@@ -167,13 +167,23 @@ It is especially useful when:
 
 ---
 
-## Limitations
+## Limitations and intended scale
 
-- Designed for small-to-medium tabular extracts, not distributed or streaming data.
+The Python/R workflow is designed for **analyst-side review of small-to-medium tabular extracts** — CSV, Excel, TSV, and Parquet files that arrive outside the warehouse. For larger business or product datasets where data lives in a warehouse, the same quality-control logic should usually run in SQL close to the source rather than by exporting everything into pandas.
+
+ByeDataClean therefore includes both:
+
+- a Python/R extract workflow for local cleaning, auditing, and documentation, and
+- an [SQL inspection cookbook](sql/) with equivalent checks — missingness, duplicates, range checks, date validity, category consistency, business-impact summaries — ready to run against warehouse tables in Postgres, BigQuery, Snowflake, or DuckDB.
+
+The goal is not to force warehouse data into pandas. The goal is to make the same data-quality reasoning reproducible across local analysis and SQL-based analytics workflows.
+
+**Other intentional constraints:**
+
 - Does not infer whether a value is *truly* correct — it flags risks and documents rules based on what you define.
-- Automated imputation is intentionally out of scope: filling missing values requires domain knowledge that a generic tool cannot supply.
+- Automated imputation is out of scope: filling missing values requires domain knowledge a generic tool cannot supply.
 - The HTML profiling mode (`--mode full`) requires `ydata-profiling` and is optional.
-- Production pipeline validation should use dbt, Soda, Great Expectations, or Pandera — see [docs/package_comparison.md](docs/package_comparison.md).
+- Production pipeline validation at scale should use dbt, Soda, Great Expectations, or Pandera — see [docs/package_comparison.md](docs/package_comparison.md).
 
 ---
 
@@ -371,13 +381,36 @@ Data and reports are never committed — `data/` and `reports/` are git-ignored.
 
 ---
 
-## Python, R, and SQL
+## Python/R extracts vs SQL warehouse checks
 
-**Python** is the primary workflow. All features described here are implemented in Python.
+ByeDataClean supports two complementary workflows depending on where the data lives:
+
+| Workflow | Best for | Typical scale | Key outputs |
+|---|---|---|---|
+| **Python/R extract** | CSV, Excel, TSV, Parquet shared with analysts | Small-to-medium extracts | Cleaned file · audit log · validation report · scorecard · manager summary |
+| **SQL warehouse** | Product, finance, customer, or event tables in a warehouse | Large business datasets | Profiling queries · duplicate checks · missingness checks · business-impact summaries |
+
+The same data-quality reasoning applies in both workflows — the SQL templates mirror the Python cleaning steps so checks can run close to production data without extracting it first.
+
+**Python** is the primary workflow. All cleaning, validation, scorecard, and reporting features are implemented in Python.
 
 **R** provides a parallel reporter (`r/run_reporter.R`) using skimr and janitor. A full R cleaning executor is planned for Stage 4.
 
-**SQL** provides a copy-edit-run inspection cookbook (`sql/inspection_cookbook/`) — 9 numbered query templates you run in your own SQL client. No automatic report generation; SQL dialects differ too much for a reliable wrapper.
+**SQL** provides a copy-edit-run inspection cookbook (`sql/inspection_cookbook/`) — 9 numbered query templates — plus a worked example for the e-commerce orders dataset (`sql/examples/ecommerce_orders_quality_checks.sql`). Run them in any SQL client against Postgres, BigQuery, Snowflake, DuckDB, or SQLite; dialect notes are in `sql/dialect_notes/`.
+
+### SQL parity with the Python workflow
+
+| Data-quality step | Python/R workflow | SQL workflow |
+|---|---|---|
+| Row and column counts | QC reporter | `COUNT(*)` + `information_schema.columns` |
+| Missingness | missingness summary + `create_missingness_flags` | `SUM(CASE WHEN col IS NULL THEN 1 ELSE 0 END)` |
+| Duplicate rows / IDs | duplicate detector | `GROUP BY id HAVING COUNT(*) > 1` |
+| Accepted values | YAML `accepted_values` rule | `WHERE col NOT IN (...)` |
+| Date validity | `parse_dates` action | `WHERE date_col > CURRENT_DATE OR date_col IS NULL` |
+| Range checks | `flag_values_outside_range` | `WHERE value < min OR value > max` |
+| Category consistency | `standardise_categories` | `GROUP BY category ORDER BY COUNT(*) DESC` |
+| Before/after validation | validation report | Row-count and metric reconciliation queries |
+| Business impact | scorecard + impact report | SQL metric-impact summary (duplicate revenue, missing-rate %) |
 
 ---
 
@@ -413,7 +446,10 @@ Data and reports are never committed — `data/` and `reports/` are git-ignored.
 | E-commerce case study | [docs/case_studies/ecommerce_revenue_quality.md](docs/case_studies/ecommerce_revenue_quality.md) |
 | Exporting to dbt / Pandera / Soda | [docs/exporting_quality_checks.md](docs/exporting_quality_checks.md) |
 | Comparing with Great Expectations / Soda / Pandera | [docs/package_comparison.md](docs/package_comparison.md) |
-| SQL cookbook | [docs/sql_workflow.md](docs/sql_workflow.md) |
+| SQL inspection cookbook (9 templates) | [sql/inspection_cookbook/](sql/inspection_cookbook/) |
+| SQL e-commerce example (orders quality checks) | [sql/examples/ecommerce_orders_quality_checks.sql](sql/examples/ecommerce_orders_quality_checks.sql) |
+| SQL dialect notes (Postgres / BigQuery / DuckDB / SQLite) | [sql/dialect_notes/](sql/dialect_notes/) |
+| SQL cookbook guide | [docs/sql_workflow.md](docs/sql_workflow.md) |
 | Troubleshooting | [docs/troubleshooting.md](docs/troubleshooting.md) |
 | Tests and contributing | [docs/development.md](docs/development.md) |
 | Repository structure | [docs/architecture.md](docs/architecture.md) |

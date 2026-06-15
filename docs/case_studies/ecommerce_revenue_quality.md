@@ -190,4 +190,20 @@ ByeDataClean covers the detection and documentation step. For production pipelin
 
 ---
 
-← [Case studies index](.) · [README](../../README.md) · [Cleaning rules reference](../cleaning_rules_reference.md)
+## Running the same checks in SQL
+
+When the orders table lives in a warehouse and is too large to export, the same quality-control logic can be applied in SQL directly against the source table. The file `sql/examples/ecommerce_orders_quality_checks.sql` contains SQL equivalents for every check in this case study:
+
+- duplicate order ID detection and revenue overstatement calculation
+- missingness rates for customer_id and acquisition_channel
+- future-dated and invalid order date detection
+- out-of-range order value checks
+- category and region consistency inspection
+- before/after GMV reconciliation query
+- final PASS / WARNING / BLOCKER scorecard query
+
+See [sql/README.md](../../sql/README.md) for how SQL checks map to ByeDataClean Python workflow concepts, and dialect notes for Postgres, BigQuery, Snowflake, and DuckDB.
+
+---
+
+← [Case studies index](.) · [README](../../README.md) · [Cleaning rules reference](../cleaning_rules_reference.md) · [SQL checks](../../sql/examples/ecommerce_orders_quality_checks.sql)
