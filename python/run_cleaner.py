@@ -74,6 +74,13 @@ def _build_parser() -> argparse.ArgumentParser:
                    help="Run the QC reporter on the cleaned data immediately after cleaning.")
     p.add_argument("--flowchart", action="store_true",
                    help="Generate a Mermaid flowchart of the cleaning steps in the log directory.")
+    p.add_argument("--scorecard", action="store_true",
+                   help="Write a stakeholder-facing data-quality scorecard to reports/scorecards/.")
+    p.add_argument("--scorecard-dir", metavar="DIR", dest="scorecard_dir",
+                   default="reports/scorecards",
+                   help="Directory to write the scorecard (default: reports/scorecards).")
+    p.add_argument("--decision-memo", action="store_true", dest="decision_memo",
+                   help="Write a pre-filled decision memo to reports/manager_summaries/.")
     return p
 
 
@@ -132,6 +139,9 @@ def main() -> None:
         log_dir=args.log_dir,
         validation_dir=args.validation_dir,
         flowchart=args.flowchart,
+        scorecard=args.scorecard,
+        scorecard_dir=args.scorecard_dir,
+        decision_memo=args.decision_memo,
     )
 
     # ── Fail-fast validation guard ─────────────────────────────────────────────

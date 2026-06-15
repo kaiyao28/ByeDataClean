@@ -39,9 +39,14 @@ safety:
 # ── Cleaning steps ────────────────────────────────────────────────────────────
 # Each step must have: step (int), action (str).
 # Optional per-step fields:
-#   decision_status: "draft" | "approved" | "deferred" | "rejected"
-#   rationale: free text — your reason for this decision
-# Both fields are copied verbatim into the cleaning log.
+#   decision_status:  "draft" | "approved" | "deferred" | "rejected"
+#   rationale:        free text — your reason for this decision
+#   severity:         "critical" | "high" | "medium" | "low"
+#   business_metric:  free text or list, e.g. revenue, retention, conversion
+#   owner:            who is responsible, e.g. analytics, data_engineering, finance
+#   action_required:  "block_report" | "investigate" | "clean_with_rule" | "flag_only"
+#   stakeholder_note: plain-language explanation for non-technical reviewers
+# All fields are copied verbatim into the cleaning log and manager summary.
 #
 # IMPORTANT: every step is explicit. The pipeline does exactly what is listed
 # here and nothing more. Steps are applied in order.

@@ -101,15 +101,19 @@ def build_cleaning_log(
 
     # ── Step summary table ────────────────────────────────────────────────────
     a("## Step Summary\n")
-    a("| Step | Name | Action | Decision Status | Rows Δ | Cells changed | Warnings |")
-    a("|---|---|---|---|---|---|---|")
+    a("| Step | Name | Action | Decision Status | Severity | Action Required | Rows Δ | Cells changed | Warnings |")
+    a("|---|---|---|---|---|---|---|---|---|")
     for sr in step_results:
-        log    = sr.get("log", {})
-        n_warn = len(log.get("warnings", []))
-        status = sr.get("decision_status") or "—"
+        log          = sr.get("log", {})
+        n_warn       = len(log.get("warnings", []))
+        status       = sr.get("decision_status") or "—"
+        severity     = sr.get("severity") or "—"
+        action_req   = sr.get("action_required") or "—"
         a(
             f"| {sr['step']} | {sr['name']} | `{sr['action']}` "
             f"| {status} "
+            f"| {severity} "
+            f"| {action_req} "
             f"| {log.get('rows_delta', 0):+} "
             f"| {log.get('cells_changed', 0)} "
             f"| {n_warn} |"
@@ -145,9 +149,22 @@ def build_cleaning_log(
         a(f"### Step {sr['step']}: {sr['name']}\n")
         a(f"- **Action:** `{sr['action']}`")
 
-        # Decision metadata
+        # Decision and business metadata
         if sr.get("decision_status"):
             a(f"- **Decision status:** {sr['decision_status']}")
+        if sr.get("severity"):
+            a(f"- **Severity:** {sr['severity']}")
+        if sr.get("business_metric"):
+            bm = sr["business_metric"]
+            if isinstance(bm, list):
+                bm = ", ".join(bm)
+            a(f"- **Business metric:** {bm}")
+        if sr.get("owner"):
+            a(f"- **Owner:** {sr['owner']}")
+        if sr.get("action_required"):
+            a(f"- **Action required:** {sr['action_required']}")
+        if sr.get("stakeholder_note"):
+            a(f"- **Stakeholder note:** {sr['stakeholder_note']}")
         if sr.get("rationale"):
             a(f"- **Rationale:** {sr['rationale']}")
 
@@ -345,6 +362,41 @@ def build_manager_summary(
         a(f"- Missing values reduced by **{miss_delta:,}** (from {miss_before:,} to {miss_after:,}).")
     elif miss_after > miss_before:
         a(f"- Missing values increased by **{miss_after - miss_before:,}** (intentional: impossible values set to blank).")
+
+    # ── Issues by severity (only shown when any step has severity set) ─────────
+    severity_order = ["critical", "high", "medium", "low"]
+    severity_groups: dict[str, list[dict]] = {s: [] for s in severity_order}
+    unclassified: list[dict] = []
+    for sr in step_results:
+        sev = (sr.get("severity") or "").strip().lower()
+        if sev in severity_groups:
+            severity_groups[sev].append(sr)
+        else:
+            unclassified.append(sr)
+
+    has_severity = any(severity_groups[s] for s in severity_order)
+    if has_severity:
+        a("\n## Issues by severity\n")
+        for sev in severity_order:
+            group = severity_groups[sev]
+            if not group:
+                continue
+            a(f"### {sev.capitalize()}\n")
+            for sr in group:
+                label = sr.get("stakeholder_note") or sr.get("rationale") or sr.get("name", "")
+                # Truncate long rationale to one sentence
+                if label and len(label) > 120:
+                    label = label[:117].rstrip() + "…"
+                bm = sr.get("business_metric") or ""
+                if isinstance(bm, list):
+                    bm = ", ".join(bm)
+                bm_str = f" — affects: {bm}" if bm else ""
+                ar = sr.get("action_required") or ""
+                ar_str = f" [{ar}]" if ar else ""
+                a(f"- **Step {sr['step']}: {sr['name']}**{ar_str}{bm_str}")
+                if label:
+                    a(f"  _{label}_")
+            a("")
 
     # ── Data checks ───────────────────────────────────────────────────────────
     a("\n## Data checks after cleaning\n")

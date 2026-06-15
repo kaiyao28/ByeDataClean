@@ -3,10 +3,24 @@
 [![Tests](https://github.com/kaiyao28/ByeDataClean/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/kaiyao28/ByeDataClean/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![Version](https://img.shields.io/badge/version-0.2.0-informational.svg)](CHANGELOG.md)
+[![Status: Active](https://img.shields.io/badge/status-active-brightgreen.svg)](docs/roadmap.md)
 
-A lightweight toolkit for profiling, deciding, and cleaning tabular data — with reproducible YAML rules, before/after logs, and visual audit flowcharts.
+**Catch data problems before they reach the dashboard.**
+
+A Python toolkit that surfaces, documents, and fixes data-quality issues — with reproducible YAML rules, before/after audit logs, and non-technical summaries for stakeholder review.
 
 > **Privacy reminder:** Do not commit raw data or share reports without reviewing them first. Reports may contain column names, category labels, and summary statistics from your dataset. See [Safety defaults](#safety-defaults) and [docs/i_have_a_csv_what_do_i_do.md](docs/i_have_a_csv_what_do_i_do.md#what-is-safe-to-share).
+
+---
+
+## Business use cases
+
+- **Prevent duplicate orders from inflating revenue** — detect and remove exact duplicates before aggregating GMV or reporting to finance.
+- **Detect missing customer IDs before retention analysis** — flag and quantify orders that cannot be joined to the CRM or included in cohort models.
+- **Flag invalid dates before dashboard refresh** — parse failures and future-dated records surfaced with warnings before they distort time-series charts.
+- **Document cleaning decisions before sharing analysis** — every rule carries a rationale, decision status, and analyst name, recorded verbatim in the audit log.
+- **Generate audit logs for reproducible stakeholder review** — timestamped cleaning logs and run manifests for every pipeline run; reviewable without re-running the code.
 
 ---
 
@@ -18,6 +32,8 @@ A lightweight toolkit for profiling, deciding, and cleaning tabular data — wit
 - Apply explicit YAML cleaning rules that describe every step and your rationale.
 - Generate timestamped logs, validation reports, run manifests, and a visual cleaning flowchart.
 - Raw data is never overwritten. Every run is auditable.
+
+**How it compares:** ByeDataClean is not a replacement for Great Expectations, Soda Core, or dbt tests. Those tools validate data in production pipelines. ByeDataClean is for the earlier step — profiling a dataset you've just received, deciding how to clean it, and documenting those decisions before analysis begins. See [docs/package_comparison.md](docs/package_comparison.md).
 
 ---
 
@@ -34,6 +50,34 @@ Profile → Decide → Clean → Validate → Re-profile
 | **Clean** | Apply explicit YAML rules step-by-step with dry-run preview |
 | **Validate** | Check required columns, ranges, accepted values, and unique keys |
 | **Re-profile** | Run the QC reporter again — confirm the issues resolved |
+
+---
+
+## Example business impact
+
+The bundled e-commerce case study (`data/examples/dirty_orders.csv`) contains 60 orders with realistic data-quality problems:
+
+| Issue detected | Detail | Business metric affected |
+|---|---|---|
+| Exact duplicate order | ORD-1005 appears twice ($312.75) | GMV overcounted by 2.5% |
+| Future-dated order | order_date = 2027-03-15 | Appears in current-period revenue |
+| Invalid calendar date | order_date = 2023-02-29 (non-leap year) | Order excluded from time series |
+| Missing customer ID | 5 orders (8%) | Excluded from retention cohort |
+| Missing acquisition channel | 5 orders (8%) | Channel attribution model biased |
+| Inconsistent region labels | 5 variants → 3 canonical | Regional revenue double-counted |
+| Category typo | "Electroncis" → Electronics | Category revenue understated |
+
+**As-reported GMV: $12,614 → After deduplication: $12,301 (−$313, −2.5%)**
+
+```bash
+# Run the orders case study
+python python/run_cleaner.py \
+  --input data/examples/dirty_orders.csv \
+  --rules config/example_business_cleaning_rules.yaml \
+  --dry-run
+```
+
+See [docs/case_studies/ecommerce_revenue_quality.md](docs/case_studies/ecommerce_revenue_quality.md) for the full analysis and safe-vs-unsafe decision guide.
 
 ---
 
@@ -151,14 +195,43 @@ python python/run_cleaner.py \
 
 ## Outputs
 
-| Output | Location |
-|---|---|
-| QC report | `reports/descriptive_summary/` |
-| Cleaned data | `data/processed/` |
-| Cleaning log | `reports/cleaning_logs/` |
-| Run manifest (YAML) | `reports/cleaning_logs/` |
-| Validation report | `reports/validation_reports/` |
-| Flowchart (`.md` + `.mmd`) | `reports/cleaning_logs/` |
+| Output | Location | Flag |
+|---|---|---|
+| QC report | `reports/descriptive_summary/` | auto |
+| Cleaned data | `data/processed/` | `--output` |
+| Cleaning log | `reports/cleaning_logs/` | auto |
+| Run manifest (YAML) | `reports/cleaning_logs/` | auto |
+| Validation report | `reports/validation_reports/` | auto |
+| Manager summary | `reports/cleaning_logs/` | auto |
+| Flowchart (`.md` + `.mmd`) | `reports/cleaning_logs/` | `--flowchart` |
+| Data quality scorecard | `reports/scorecards/` | `--scorecard` |
+
+**Example scorecard output:**
+
+```markdown
+# Data Quality Scorecard
+
+**Dataset:** `dirty_orders.csv`   **Generated:** 2024-05-15 14:32
+
+## Overall status: ⚠ WARNING
+
+One or more issues require investigation before this data is used for reporting.
+
+## Issues by severity
+| Severity | Steps flagged |
+|---|---:|
+| Critical | 1 |
+| High     | 2 |
+| Medium   | 1 |
+| Low      | 0 |
+
+## Recommended use
+- ✓ Safe for exploratory analysis
+- ✗ Safe for dashboard refresh
+- ✗ Safe for experiment readout
+- ✗ Safe for executive reporting
+- ✗ Not safe without investigation
+```
 
 Data and reports are never committed — `data/` and `reports/` are git-ignored.
 
@@ -213,11 +286,15 @@ Data and reports are never committed — `data/` and `reports/` are git-ignored.
 | All 14 cleaning actions | [docs/cleaning_rules_reference.md](docs/cleaning_rules_reference.md) |
 | Snapshots and validation | [docs/before_after_validation.md](docs/before_after_validation.md) |
 | Cleaning decision guides | [docs/cleaning_decision_guides/README.md](docs/cleaning_decision_guides/README.md) |
+| E-commerce case study | [docs/case_studies/ecommerce_revenue_quality.md](docs/case_studies/ecommerce_revenue_quality.md) |
+| Exporting to dbt / Pandera / Soda | [docs/exporting_quality_checks.md](docs/exporting_quality_checks.md) |
+| Comparing with Great Expectations / Soda / Pandera | [docs/package_comparison.md](docs/package_comparison.md) |
 | SQL cookbook | [docs/sql_workflow.md](docs/sql_workflow.md) |
 | Troubleshooting | [docs/troubleshooting.md](docs/troubleshooting.md) |
 | Tests and contributing | [docs/development.md](docs/development.md) |
 | Repository structure | [docs/architecture.md](docs/architecture.md) |
 | Roadmap | [docs/roadmap.md](docs/roadmap.md) |
+| Release checklist | [docs/release_checklist.md](docs/release_checklist.md) |
 
 ---
 
@@ -227,7 +304,22 @@ Data and reports are never committed — `data/` and `reports/` are git-ignored.
 python -m pytest
 ```
 
-130 tests. See [docs/development.md](docs/development.md) for the full breakdown.
+204 tests. See [docs/development.md](docs/development.md) for the full breakdown.
+
+---
+
+## Contributing
+
+Bug reports, feature requests, and cleaning action suggestions are welcome. Please use the [GitHub issue templates](.github/ISSUE_TEMPLATE/) to describe what you need. See [docs/development.md](docs/development.md) for the test setup and contribution guidelines.
+
+---
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a full version history.
+
+**Current version:** 0.2.0 — Auditable cleaning and validation
+**Next planned:** 0.3.0 — See [docs/roadmap.md](docs/roadmap.md)
 
 ---
 

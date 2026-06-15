@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from toolkit.config import DEFAULTS, load_config, validate_config
+from toolkit.config import DEFAULTS, load_config, validate_config, validate_rules
 
 
 REPO_ROOT = Path(__file__).parent.parent
@@ -70,3 +70,50 @@ def test_validate_config_raises_on_bad_mode():
 def test_missing_config_file_raises():
     with pytest.raises(FileNotFoundError):
         load_config("/nonexistent/path/config.yaml")
+
+
+# ── validate_rules: business metadata fields ──────────────────────────────────
+
+def _minimal_rules(extra_fields: dict | None = None) -> dict:
+    """Return a minimal valid rules dict, with optional extra per-step fields."""
+    step = {"step": 1, "action": "trim_whitespace", **(extra_fields or {})}
+    return {"version": 1, "rules": [step]}
+
+
+def test_validate_rules_accepts_valid_severity():
+    for sev in ("critical", "high", "medium", "low"):
+        errors = validate_rules(_minimal_rules({"severity": sev}))
+        assert errors == [], f"Expected no errors for severity={sev!r}, got {errors}"
+
+
+def test_validate_rules_rejects_invalid_severity():
+    errors = validate_rules(_minimal_rules({"severity": "urgent"}))
+    assert any("severity" in e for e in errors)
+
+
+def test_validate_rules_accepts_valid_action_required():
+    for ar in ("block_report", "investigate", "clean_with_rule", "flag_only"):
+        errors = validate_rules(_minimal_rules({"action_required": ar}))
+        assert errors == [], f"Expected no errors for action_required={ar!r}, got {errors}"
+
+
+def test_validate_rules_rejects_invalid_action_required():
+    errors = validate_rules(_minimal_rules({"action_required": "delete_it"}))
+    assert any("action_required" in e for e in errors)
+
+
+def test_validate_rules_business_metadata_all_optional():
+    errors = validate_rules(_minimal_rules())
+    assert errors == []
+
+
+def test_validate_rules_accepts_full_business_metadata():
+    extra = {
+        "severity": "high",
+        "business_metric": ["revenue", "gmv"],
+        "owner": "analytics",
+        "action_required": "investigate",
+        "stakeholder_note": "Review before publishing.",
+    }
+    errors = validate_rules(_minimal_rules(extra))
+    assert errors == []

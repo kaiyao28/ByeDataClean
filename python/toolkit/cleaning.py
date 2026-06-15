@@ -38,6 +38,10 @@ def run_cleaning_pipeline(
     log_dir: str = "reports/cleaning_logs",
     validation_dir: str = "reports/validation_reports",
     flowchart: bool = False,
+    scorecard: bool = False,
+    scorecard_dir: str = "reports/scorecards",
+    decision_memo: bool = False,
+    memo_dir: str = "reports/manager_summaries",
 ) -> tuple[pd.DataFrame, str, str]:
     """Apply all rules in step order. Return (cleaned_df, cleaning_log_str, validation_report_str).
 
@@ -102,12 +106,18 @@ def run_cleaning_pipeline(
             print(f"    ⚠️  {w}", file=sys.stderr)
 
         step_results.append({
-            "step":            step_n,
-            "name":            name,
-            "action":          action,
-            "decision_status": rule.get("decision_status", ""),
-            "rationale":       rule.get("rationale", ""),
-            "log":             log_entry,
+            "step":             step_n,
+            "name":             name,
+            "action":           action,
+            "decision_status":  rule.get("decision_status", ""),
+            "rationale":        rule.get("rationale", ""),
+            # Optional business metadata (Prompt 4)
+            "severity":         rule.get("severity", ""),
+            "business_metric":  rule.get("business_metric", ""),
+            "owner":            rule.get("owner", ""),
+            "action_required":  rule.get("action_required", ""),
+            "stakeholder_note": rule.get("stakeholder_note", ""),
+            "log":              log_entry,
             # ── Flowchart / impact-table fields ───────────────────────────────
             "cols_before":     len(cols_before_list),
             "cols_after":      len(cols_after_list),
@@ -238,5 +248,38 @@ def run_cleaning_pipeline(
     print(f"  ✓ Summary       → {mgr_path}")
     print(f"  ✓ Validation    → {val_path}")
     print(f"  ✓ Run manifest  → {man_path}")
+
+    # ── 8. Decision memo (optional) ──────────────────────────────────────────
+    if decision_memo:
+        from toolkit.decision_memo import build_decision_memo, write_decision_memo
+
+        memo_content = build_decision_memo(
+            dataset_name=Path(input_path).name,
+            step_results=step_results,
+            validation_results=val_results,
+            before_snap=before,
+            after_snap=after,
+            rules_name=rules_name,
+            log_path=log_path,
+            val_path=val_path,
+        )
+        memo_path = write_decision_memo(memo_content, memo_dir, rules_name)
+        print(f"  ✓ Decision memo → {memo_path}")
+
+    # ── 9. Scorecard (optional) ───────────────────────────────────────────────
+    if scorecard:
+        from toolkit.scorecard import build_scorecard, write_scorecard
+
+        dataset_name = Path(input_path).name
+        sc_content = build_scorecard(
+            dataset_name=dataset_name,
+            before_snap=before,
+            after_snap=after,
+            step_results=step_results,
+            validation_results=val_results,
+            rules_name=rules_name,
+        )
+        sc_path = write_scorecard(sc_content, scorecard_dir, rules_name)
+        print(f"  ✓ Scorecard     → {sc_path}")
 
     return cleaned, cleaning_log, val_report

@@ -33,14 +33,30 @@
 - Validation fail-fast mode (`validation: fail_on_error: true`)
 - Manager-friendly cleaning summary generated alongside every cleaning log
 
+## Stage 3b — complete
+
+- Business-impact case study: e-commerce orders dataset (`data/examples/dirty_orders.csv`)
+- Per-rule business metadata fields: `severity`, `business_metric`, `owner`, `action_required`, `stakeholder_note`
+- Config validation for invalid `severity` and `action_required` values
+- Business metadata included in cleaning log and manager summary (grouped by severity)
+- Data-quality scorecard (`python/toolkit/scorecard.py`): PASS / WARNING / BLOCKER + recommended-use grid
+- `--scorecard` CLI flag → `reports/scorecards/`
+- Business metric impact calculator (`python/toolkit/business_impact.py` + `python/run_business_impact.py`)
+- Decision memo generator (`python/toolkit/decision_memo.py`) + `--decision-memo` CLI flag → `reports/manager_summaries/`
+- Decision memo static template (`docs/templates/decision_memo_template.md`)
+- dbt / Pandera / Soda export starter templates (`python/export_quality_checks.py`)
+- GitHub issue templates and pull request template
+- CHANGELOG.md and release checklist
+- 204 pytest tests
+
 ## Stage 4 — planned
 
 - Full HTML profiling mode via DataExplorer (R)
 - Complete R cleaning executor (`run_cleaner.R`)
-- Pandera schema validation integration
+- Full Pandera integration (round-trip schema sync)
 - pointblank examples (R)
-- dbt test generation templates
-- Soda Core check templates
+- Full dbt test generation (beyond starter templates)
+- Full Soda Core integration
 
 ## Deferred (not in scope for V1)
 

@@ -1,0 +1,282 @@
+# ── example_business_cleaning_rules.yaml ─────────────────────────────────────
+# Cleaning rules for the e-commerce orders case study dataset.
+# Input: data/examples/dirty_orders.csv
+#
+# See docs/case_studies/ecommerce_revenue_quality.md for the full business
+# context, before/after metrics, and safe-vs-unsafe analysis decisions.
+#
+# Dry-run first:
+#   python python/run_cleaner.py \
+#     --input data/examples/dirty_orders.csv \
+#     --rules config/example_business_cleaning_rules.yaml \
+#     --dry-run
+#
+# Apply cleaning:
+#   python python/run_cleaner.py \
+#     --input  data/examples/dirty_orders.csv \
+#     --rules  config/example_business_cleaning_rules.yaml \
+#     --output data/processed/orders_cleaned.csv \
+#     --confirm-destructive \
+#     --after-report \
+#     --flowchart
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: 1
+name: "example_business_cleaning_rules"
+
+metadata:
+  analyst: "demo"
+  analysis_purpose: "Q1–Q2 2024 e-commerce revenue and retention analysis"
+  expected_unit: "one row per order"
+  notes: >
+    Cleaning rules for the bundled dirty_orders.csv case study dataset.
+    This dataset demonstrates how common e-commerce data quality issues can
+    distort GMV, channel attribution, and customer retention metrics.
+
+safety:
+  allow_row_drop: true      # needed for step 10 (remove_exact_duplicates)
+  allow_column_drop: false
+
+rules:
+
+  - step: 1
+    name: "standardise_column_names"
+    action: "standardise_column_names"
+    decision_status: "approved"
+    rationale: >
+      Converts all column names to snake_case. Ensures consistency with
+      downstream SQL joins and BI tool field names.
+
+  - step: 2
+    name: "replace_missing_codes"
+    action: "replace_missing_codes"
+    columns: "all"
+    missing_codes:
+      - ""
+      - "NA"
+      - "N/A"
+      - "unknown"
+    decision_status: "approved"
+    rationale: >
+      Empty strings in customer_id and acquisition_channel fields represent
+      missing data from the order management system export — not valid values.
+      Standardising to NaN ensures correct missing-rate calculations.
+
+  - step: 3
+    name: "trim_whitespace"
+    action: "trim_whitespace"
+    columns: "string"
+    decision_status: "approved"
+    rationale: >
+      Leading/trailing whitespace in categorical columns causes lookup failures
+      in BI tools and inflates cardinality counts. No intentional whitespace
+      expected in any column.
+
+  - step: 4
+    name: "standardise_currency_codes"
+    action: "map_categories"
+    column: "currency"
+    mapping:
+      usd: "USD"
+      Usd: "USD"
+      gbp: "GBP"
+      Gbp: "GBP"
+      Eur: "EUR"
+      eur: "EUR"
+    unmatched_action: "keep"
+    decision_status: "approved"
+    rationale: >
+      Currency codes exported with inconsistent casing (usd, gbp, Eur).
+      ISO 4217 standard requires uppercase. Affects multi-currency revenue
+      aggregation and FX conversion lookups.
+
+  - step: 5
+    name: "standardise_region_labels"
+    action: "map_categories"
+    column: "region"
+    mapping:
+      us: "North America"
+      US: "North America"
+      USA: "North America"
+      "united states": "North America"
+      "United States": "North America"
+      "Asia Pacific": "APAC"
+      "asia pacific": "APAC"
+      EU: "Europe"
+      eu: "Europe"
+    unmatched_action: "warn"
+    decision_status: "approved"
+    severity: "high"
+    business_metric: ["revenue", "regional_dashboard"]
+    owner: "data_engineering"
+    action_required: "clean_with_rule"
+    stakeholder_note: >
+      Regional revenue dashboard double-counts North America because of label
+      inconsistency. Fix applied — dashboard will show correct regional split.
+    rationale: >
+      Five distinct encodings found for North America and Asia Pacific.
+      Regional dashboard currently double-counts because "US", "USA",
+      and "North America" are treated as separate rows. All values reviewed
+      against the approved region list: North America, Europe, APAC.
+
+  - step: 6
+    name: "standardise_product_categories"
+    action: "map_categories"
+    column: "product_category"
+    mapping:
+      electronics: "Electronics"
+      ELECTRONICS: "Electronics"
+      Electroncis: "Electronics"
+      apparel: "Apparel"
+      APPAREL: "Apparel"
+      "home & garden": "Home & Garden"
+      "Home and Garden": "Home & Garden"
+      "HOME & GARDEN": "Home & Garden"
+    unmatched_action: "warn"
+    decision_status: "approved"
+    rationale: >
+      Category dashboard shows "Electroncis" (typo) and mixed-case variants
+      as separate rows, suppressing their true revenue contribution.
+      All source values reviewed and mapped to three approved categories:
+      Electronics, Apparel, Home & Garden.
+
+  - step: 7
+    name: "standardise_refunded_flag"
+    action: "map_categories"
+    column: "refunded"
+    mapping:
+      "Y":     "yes"
+      "y":     "yes"
+      "Yes":   "yes"
+      "YES":   "yes"
+      "True":  "yes"
+      "true":  "yes"
+      "1":     "yes"
+      "N":     "no"
+      "n":     "no"
+      "No":    "no"
+      "NO":    "no"
+      "False": "no"
+      "false": "no"
+      "FALSE": "no"
+      "0":     "no"
+    unmatched_action: "warn"
+    decision_status: "approved"
+    rationale: >
+      Refund flag exported with mixed boolean encodings (Y/True/yes/FALSE).
+      Standardising to yes/no ensures correct refund-rate calculations and
+      prevents double-counting refunded orders in net revenue.
+
+  - step: 8
+    name: "parse_order_dates"
+    action: "parse_dates"
+    columns:
+      - "order_date"
+      - "signup_date"
+    decision_status: "approved"
+    rationale: >
+      Converts date strings to datetime objects. Invalid dates (e.g., 2023-02-29,
+      which does not exist in a non-leap year) are coerced to NaT with a warning.
+      Future-dated orders (e.g., 2027-03-15) are parsed as valid datetime values
+      but must be reviewed manually — they may indicate data entry errors or
+      pre-booked orders that should be excluded from current-period revenue.
+
+  - step: 9
+    name: "flag_invalid_order_values"
+    action: "set_invalid_to_missing"
+    column: "order_value"
+    min: 0.01
+    decision_status: "approved"
+    severity: "high"
+    business_metric: ["revenue", "gmv"]
+    owner: "analytics"
+    action_required: "investigate"
+    stakeholder_note: >
+      Two orders have invalid values (one negative, one zero). These have been
+      set aside and require human review before the revenue figure is finalised.
+    rationale: >
+      Negative order values (-149.99) and zero-value orders (0.00) cannot be
+      valid completed purchases. Setting to missing for analyst investigation.
+      These may be data entry errors, cancelled orders not filtered upstream,
+      or refund records that should be in a separate refunds table.
+      Investigate before deciding whether to exclude or reclassify.
+
+  - step: 10
+    name: "flag_order_value_outliers"
+    action: "flag_outliers_iqr"
+    column: "order_value"
+    output_column: "order_value_outlier_flag"
+    remove: false
+    decision_status: "approved"
+    rationale: >
+      IQR method identifies unusually high order values for analyst review.
+      Outlier rows are flagged, not removed — a genuine high-value order
+      should not be silently dropped. Review the flagged rows before reporting.
+
+  - step: 11
+    name: "add_missingness_flags"
+    action: "create_missingness_flags"
+    columns:
+      - "customer_id"
+      - "acquisition_channel"
+      - "order_value"
+    only_if_any_missing: true
+    suffix: "_missing_flag"
+    decision_status: "approved"
+    severity: "medium"
+    business_metric: ["retention", "channel_attribution"]
+    owner: "analytics"
+    action_required: "investigate"
+    stakeholder_note: >
+      8% of orders are missing a customer ID (can't be linked to CRM) and 8%
+      are missing an acquisition channel (affects attribution reporting).
+      Flags added so downstream analysts know which rows to exclude or investigate.
+    rationale: >
+      customer_id missing (8% of orders): excludes those orders from retention
+      and cohort analysis. acquisition_channel missing (8%): biases channel
+      attribution model. order_value missing after step 9: marks excluded rows.
+      Flags allow downstream queries to explicitly filter or count excluded rows.
+
+  - step: 12
+    name: "remove_exact_duplicates"
+    action: "remove_exact_duplicates"
+    allow_row_drop: true
+    decision_status: "approved"
+    severity: "critical"
+    business_metric: ["revenue", "gmv", "order_count"]
+    owner: "data_engineering"
+    action_required: "clean_with_rule"
+    stakeholder_note: >
+      One duplicated order (ORD-1005, $312.75) was removed. This was inflating
+      reported GMV by 2.5%. The cleaned revenue figure is $313 lower than the
+      raw export. Finance should update any figures from the raw export.
+    rationale: >
+      ORD-1005 appears twice with identical values on all columns. Confirmed
+      as an accidental double-export from the order management system — same
+      order_id, same date, same value ($312.75). The duplicate inflates GMV
+      by $312.75 (2.5% of total). Exact duplicate only: no partial-match
+      deduplication needed for this dataset.
+
+# ── Validation ────────────────────────────────────────────────────────────────
+
+validation:
+  required_columns:
+    - order_id
+    - order_date
+    - order_value
+    - currency
+
+  unique_keys:
+    - [order_id]
+
+  accepted_values:
+    currency:             ["USD", "GBP", "EUR"]
+    region:               ["North America", "Europe", "APAC"]
+    acquisition_channel:  ["organic", "paid_search", "referral", "social"]
+    product_category:     ["Electronics", "Apparel", "Home & Garden"]
+    refunded:             ["yes", "no"]
+
+  ranges:
+    order_value:
+      min: 0.01
+      max: 10000.00

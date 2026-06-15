@@ -135,6 +135,9 @@ SUPPORTED_ACTIONS = {
     "create_missingness_flags",
 }
 
+VALID_SEVERITIES = {"critical", "high", "medium", "low"}
+VALID_ACTION_REQUIRED = {"block_report", "investigate", "clean_with_rule", "flag_only"}
+
 
 def load_rules(rules_path: str | Path) -> dict[str, Any]:
     """Load YAML cleaning rules file and return as dict."""
@@ -237,6 +240,21 @@ def validate_rules(rules: dict[str, Any]) -> list[str]:
                 errors.append(
                     f"{loc} (flag_outliers_iqr with remove: true): requires 'allow_row_drop: true'."
                 )
+
+        # Optional business metadata validation
+        severity = step.get("severity")
+        if severity is not None and severity not in VALID_SEVERITIES:
+            errors.append(
+                f"{loc}: invalid 'severity' value {severity!r}. "
+                f"Must be one of {sorted(VALID_SEVERITIES)}."
+            )
+
+        action_req = step.get("action_required")
+        if action_req is not None and action_req not in VALID_ACTION_REQUIRED:
+            errors.append(
+                f"{loc}: invalid 'action_required' value {action_req!r}. "
+                f"Must be one of {sorted(VALID_ACTION_REQUIRED)}."
+            )
 
     return errors
 
