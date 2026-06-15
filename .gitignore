@@ -52,3 +52,5 @@ env/
 .idea/
 *.swp
 *.swo
+
+.gitignore
