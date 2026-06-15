@@ -74,6 +74,13 @@ python python/run_cleaner.py --input data/raw/orders.csv --rules config/cleaning
 
 No extra packages required for core cleaning. Raw data is never overwritten.
 
+**Example outputs** from the bundled e-commerce dataset — browse without running any code:
+
+- [Scorecard](docs/example_outputs/ecommerce_scorecard.md) — PASS/WARNING/BLOCKER status table
+- [Decision memo](docs/example_outputs/ecommerce_decision_memo.md) — stakeholder-ready recommendation with next actions
+- [Cleaning log excerpt](docs/example_outputs/ecommerce_cleaning_log_excerpt.md) — per-step audit trail
+- [Cleaning flowchart](docs/example_outputs/ecommerce_flowchart.md) — Mermaid visual of the cleaning run
+
 ---
 
 ## Before / after — 60-row e-commerce extract
@@ -142,6 +149,31 @@ Generated automatically with `--scorecard`:
 - Raw data is never overwritten. Every run is auditable.
 
 **How it compares:** ByeDataClean is not a replacement for Great Expectations, Soda Core, or dbt tests. Those tools validate data in production pipelines. ByeDataClean is for the earlier step — profiling a dataset you've just received, deciding how to clean it, and documenting those decisions before analysis begins. See [docs/package_comparison.md](docs/package_comparison.md).
+
+---
+
+## Who this is for
+
+ByeDataClean is for **analysts and data scientists** who receive messy CSV, Excel, or Parquet extracts and need a reproducible way to profile, clean, validate, and document the dataset before sharing analysis with stakeholders.
+
+It is especially useful when:
+
+- You need to justify a data-quality decision to a manager or client.
+- You need an audit trail for regulatory or reproducibility reasons.
+- A dataset arrives with no documentation and you need to assess how trustworthy it is.
+- You want to export cleaning decisions as dbt tests, Pandera schemas, or Soda checks for later pipeline use.
+
+**Who this is not for:** ByeDataClean does not replace production data-quality platforms (Great Expectations, Soda Core, dbt tests, Pandera). Use those when your data lives in a production pipeline or warehouse and needs continuous validation at scale.
+
+---
+
+## Limitations
+
+- Designed for small-to-medium tabular extracts, not distributed or streaming data.
+- Does not infer whether a value is *truly* correct — it flags risks and documents rules based on what you define.
+- Automated imputation is intentionally out of scope: filling missing values requires domain knowledge that a generic tool cannot supply.
+- The HTML profiling mode (`--mode full`) requires `ydata-profiling` and is optional.
+- Production pipeline validation should use dbt, Soda, Great Expectations, or Pandera — see [docs/package_comparison.md](docs/package_comparison.md).
 
 ---
 
@@ -388,16 +420,31 @@ Data and reports are never committed — `data/` and `reports/` are git-ignored.
 | Roadmap | [docs/roadmap.md](docs/roadmap.md) |
 | Release checklist | [docs/release_checklist.md](docs/release_checklist.md) |
 | Banner and visual assets | [docs/assets/README.md](docs/assets/README.md) |
+| Example outputs (scorecard, memo, log, flowchart) | [docs/example_outputs/](docs/example_outputs/) |
 
 ---
 
 ## Run tests
 
 ```bash
-python -m pytest
+# Using pytest directly
+python3 -m pytest
+
+# Using make
+make test
 ```
 
 204 tests. See [docs/development.md](docs/development.md) for the full breakdown.
+
+```bash
+# Other make targets
+make install       # pip install -e ".[dev]"
+make demo          # run the bundled demo
+make demo-orders   # dry-run the e-commerce case study (scorecard + memo + flowchart)
+make lint          # ruff check
+make format        # ruff format
+make check         # lint + test
+```
 
 ---
 
