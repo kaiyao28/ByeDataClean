@@ -6,11 +6,98 @@
 [![Version](https://img.shields.io/badge/version-0.2.0-informational.svg)](CHANGELOG.md)
 [![Status: Active](https://img.shields.io/badge/status-active-brightgreen.svg)](docs/roadmap.md)
 
-**Catch data problems before they reach the dashboard.**
+<!-- Banner image: add docs/assets/byedataclean_banner.png and uncomment the line below — see docs/assets/README.md for the design specification. -->
+<!-- <p align="center"><img src="docs/assets/byedataclean_banner.png" alt="ByeDataClean — From messy data to trustworthy decisions" width="900"></p> -->
 
-A Python toolkit that surfaces, documents, and fixes data-quality issues — with reproducible YAML rules, before/after audit logs, and non-technical summaries for stakeholder review.
+**From messy data to trustworthy decisions.**
+
+A Python toolkit for profiling, cleaning, and documenting tabular data — with reproducible YAML rules, automated validation, and stakeholder-ready summaries. Built for analysts who need to answer: _"Is this data safe to use?"_
 
 > **Privacy reminder:** Do not commit raw data or share reports without reviewing them first. Reports may contain column names, category labels, and summary statistics from your dataset. See [Safety defaults](#safety-defaults) and [docs/i_have_a_csv_what_do_i_do.md](docs/i_have_a_csv_what_do_i_do.md#what-is-safe-to-share).
+
+---
+
+## How it works
+
+```mermaid
+flowchart LR
+    Raw["Raw data\nCSV · Excel · TSV · Parquet"]
+    Prof["Profile\nmissingness · duplicates\noutliers · categories"]
+    Rules["Write YAML rules\naction · rationale\nseverity · owner"]
+    Clean["Clean\n14 actions · dry-run\ndestructive guard"]
+    Valid["Validate\nranges · values\nrequired columns"]
+    Out["Outputs\nscorecard · audit log\nmanager summary · flowchart"]
+    Dec{"Data quality\nstatus"}
+    Pass["PASS\nsafe to use"]
+    Warn["WARNING\nuse with caveats"]
+    Blk["BLOCKER\nresolve first"]
+
+    Raw --> Prof --> Rules --> Clean --> Valid --> Out --> Dec
+    Dec --> Pass
+    Dec --> Warn
+    Dec --> Blk
+
+    classDef input fill:#e8f1ff,stroke:#2b6cb0,stroke-width:2px
+    classDef step  fill:#f7fafc,stroke:#4a5568,stroke-width:1px
+    classDef out   fill:#e6fffa,stroke:#319795,stroke-width:2px
+    classDef pass  fill:#e9ffe8,stroke:#2f855a,stroke-width:2px
+    classDef warn  fill:#fff8db,stroke:#d69e2e,stroke-width:2px
+    classDef blk   fill:#ffe8e8,stroke:#c53030,stroke-width:2px
+
+    class Raw input
+    class Prof,Rules,Clean,Valid step
+    class Out out
+    class Dec step
+    class Pass pass
+    class Warn warn
+    class Blk blk
+```
+
+---
+
+## Before / after — 60-row e-commerce extract
+
+**Raw export (excerpt):**
+
+```
+order_id   order_value  region          product_category  order_date
+ORD-1005    312.75      APAC            Apparel           2024-01-14
+ORD-1005    312.75      APAC            Apparel           2024-01-14  ← exact duplicate
+ORD-1017     34.50      us              electronics       2024-02-09  ← inconsistent labels
+ORD-1021   -149.99      Europe          Apparel           2024-02-17  ← negative value
+ORD-1050    425.00      North America   Electronics       2027-03-15  ← future date
+```
+
+**After ByeDataClean:**
+
+```
+order_id   order_value  region          product_category  order_date
+ORD-1005    312.75      APAC            Apparel           2024-01-14  ✓ kept
+            [removed]                                                  ✓ duplicate dropped
+ORD-1017     34.50      North America   Electronics       2024-02-09  ✓ labels fixed
+ORD-1021      NaN       Europe          Apparel           2024-02-17  ⚠ flagged for review
+ORD-1050    425.00      North America   Electronics       2027-03-15  ⚠ date flagged
+```
+
+Reported GMV: **$12,614** → Corrected: **$12,301** (−$313, −2.5%)
+
+---
+
+## Data quality scorecard — example output
+
+Generated automatically with `--scorecard`:
+
+| Check | Status | Business impact |
+|---|:---:|---|
+| Order ID uniqueness | ✗ BLOCKER | Duplicate ORD-1005 — GMV overcounted by $313 (2.5%) |
+| Date validity | ✗ BLOCKER | Future-dated order appears in current-period revenue |
+| Customer ID completeness | ⚠ WARNING | 8% of orders excluded from retention cohort |
+| Acquisition channel | ⚠ WARNING | 8% missing — channel attribution model biased |
+| Currency codes | ✓ RESOLVED | Standardised to ISO 4217 (USD / GBP / EUR) |
+| Region labels | ✓ RESOLVED | 5 variants consolidated to 3 canonical regions |
+| Product categories | ✓ RESOLVED | Typos and casing fixed across 7 rows |
+
+**Overall: ⚠ WARNING** — safe for exploratory analysis. Do not publish GMV or retention figures until the two BLOCKER items are resolved.
 
 ---
 
@@ -34,22 +121,6 @@ A Python toolkit that surfaces, documents, and fixes data-quality issues — wit
 - Raw data is never overwritten. Every run is auditable.
 
 **How it compares:** ByeDataClean is not a replacement for Great Expectations, Soda Core, or dbt tests. Those tools validate data in production pipelines. ByeDataClean is for the earlier step — profiling a dataset you've just received, deciding how to clean it, and documenting those decisions before analysis begins. See [docs/package_comparison.md](docs/package_comparison.md).
-
----
-
-## Workflow
-
-```
-Profile → Decide → Clean → Validate → Re-profile
-```
-
-| Step | What happens |
-|---|---|
-| **Profile** | Run the QC reporter on raw data — see warnings, outliers, missingness |
-| **Decide** | Review findings; choose cleaning actions using the decision guides |
-| **Clean** | Apply explicit YAML rules step-by-step with dry-run preview |
-| **Validate** | Check required columns, ranges, accepted values, and unique keys |
-| **Re-profile** | Run the QC reporter again — confirm the issues resolved |
 
 ---
 
@@ -295,6 +366,7 @@ Data and reports are never committed — `data/` and `reports/` are git-ignored.
 | Repository structure | [docs/architecture.md](docs/architecture.md) |
 | Roadmap | [docs/roadmap.md](docs/roadmap.md) |
 | Release checklist | [docs/release_checklist.md](docs/release_checklist.md) |
+| Banner and visual assets | [docs/assets/README.md](docs/assets/README.md) |
 
 ---
 
