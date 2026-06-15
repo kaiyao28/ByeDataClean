@@ -4,15 +4,18 @@ build-backend = "setuptools.backends.legacy:build"
 
 [project]
 name = "byedataclean"
-version = "0.1.0"
-description = "Lightweight orchestration layer for descriptive QC reporting around pandas/numpy, skimpy, and ydata-profiling."
+version = "0.3.0"
+description = "A lightweight data-quality toolkit for profiling, cleaning, validating, and documenting tabular datasets with auditable YAML rules and stakeholder-ready summaries."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.9"
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Topic :: Database",
+    "Topic :: Software Development :: Quality Assurance",
     "Topic :: Scientific/Engineering :: Information Analysis",
 ]
 dependencies = [

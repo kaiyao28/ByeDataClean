@@ -9,6 +9,10 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+---
+
+## [0.3.0] — 2026-06-15
+
 ### Added
 - Business-impact case study: `data/examples/dirty_orders.csv` and `config/example_business_cleaning_rules.yaml`
 - E-commerce case study document: `docs/case_studies/ecommerce_revenue_quality.md`
@@ -21,9 +25,12 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Business metric impact calculator (`python/toolkit/business_impact.py` and `python/run_business_impact.py`)
 - Decision memo generator (`python/toolkit/decision_memo.py`) with `--decision-memo` CLI flag
 - Decision memo template: `docs/templates/decision_memo_template.md`
-- GitHub issue templates (bug, feature, cleaning action request)
-- Pull request template
-- README: "Business use cases" section and "Example business impact" block
+- Export starter templates for dbt, Pandera and Soda Core (`python/export_quality_checks.py`)
+- GitHub issue templates (bug, feature, cleaning action request) and PR template
+- README hero section: "From messy data to trustworthy decisions" — business-first positioning
+- README: user-journey Mermaid workflow diagram, before/after example, scorecard example table
+- `docs/assets/README.md` — banner design specification and Canva/Figma prompt
+- 204 pytest tests (74 new since 0.2.0)
 
 ---
 
@@ -72,6 +79,7 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-[Unreleased]: https://github.com/kaiyao28/ByeDataClean/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/kaiyao28/ByeDataClean/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/kaiyao28/ByeDataClean/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/kaiyao28/ByeDataClean/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/kaiyao28/ByeDataClean/releases/tag/v0.1.0

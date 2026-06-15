@@ -15,7 +15,7 @@
 - Config templates: cleaning rules, category mappings, missing codes
 - 4 analysis-specific cleaning profiles (descriptive, regression, ML, longitudinal)
 
-## Stage 3 — complete
+## Stage 3 — complete (v0.2.0)
 
 - Config-driven Python cleaning executor (`run_cleaner.py`)
 - 14 cleaning actions with dry-run support (including `create_missingness_flags`)
@@ -33,7 +33,7 @@
 - Validation fail-fast mode (`validation: fail_on_error: true`)
 - Manager-friendly cleaning summary generated alongside every cleaning log
 
-## Stage 3b — complete
+## Stage 3b — complete (v0.3.0)
 
 - Business-impact case study: e-commerce orders dataset (`data/examples/dirty_orders.csv`)
 - Per-rule business metadata fields: `severity`, `business_metric`, `owner`, `action_required`, `stakeholder_note`

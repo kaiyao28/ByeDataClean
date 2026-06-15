@@ -3,7 +3,7 @@
 [![Tests](https://github.com/kaiyao28/ByeDataClean/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/kaiyao28/ByeDataClean/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![Version](https://img.shields.io/badge/version-0.2.0-informational.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.0-informational.svg)](CHANGELOG.md)
 [![Status: Active](https://img.shields.io/badge/status-active-brightgreen.svg)](docs/roadmap.md)
 
 <!-- Banner image: add docs/assets/byedataclean_banner.png and uncomment the line below — see docs/assets/README.md for the design specification. -->
@@ -52,6 +52,27 @@ flowchart LR
     class Warn warn
     class Blk blk
 ```
+
+---
+
+## What you get after one run
+
+```bash
+python python/run_cleaner.py --input data/raw/orders.csv --rules config/cleaning_rules.yaml \
+  --output data/processed/orders_clean.csv --scorecard --decision-memo --flowchart
+```
+
+| Output file | Location | What it contains |
+|---|---|---|
+| `orders_clean.csv` | `data/processed/` | Cleaned, analysis-ready dataset |
+| `cleaning_log.md` | `reports/cleaning_logs/` | Every action, rationale, rows/cells changed |
+| `flowchart.mmd` | `reports/cleaning_logs/` | Visual Mermaid diagram of the cleaning run |
+| `run_manifest.yaml` | `reports/cleaning_logs/` | Git commit, Python version, row counts — machine-readable |
+| `validation_report.md` | `reports/validation_reports/` | Before/after checks: required columns, ranges, accepted values |
+| `scorecard.md` | `reports/scorecards/` | PASS / WARNING / BLOCKER status with business-impact table |
+| `manager_summary.md` | `reports/manager_summaries/` | Non-technical decision memo ready to share with stakeholders |
+
+No extra packages required for core cleaning. Raw data is never overwritten.
 
 ---
 
