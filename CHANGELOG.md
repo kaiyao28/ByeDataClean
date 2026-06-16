@@ -27,9 +27,14 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Decision memo template: `docs/templates/decision_memo_template.md`
 - Export starter templates for dbt, Pandera and Soda Core (`python/export_quality_checks.py`)
 - GitHub issue templates (bug, feature, cleaning action request) and PR template
-- README hero section: "From messy data to trustworthy decisions" — business-first positioning
-- README: user-journey Mermaid workflow diagram, before/after example, scorecard example table
+- SQL inspection cookbook revamped: business-framing, Python/R parity table, dialect notes
+- SQL e-commerce worked example (`sql/examples/ecommerce_orders_quality_checks.sql`): 12 checks including duplicate GMV overstatement, missingness rates, date validity, scorecard summary query
+- `docs/example_outputs/` — browsable scorecard, decision memo, cleaning log excerpt, and flowchart from the e-commerce case study
+- `Makefile` — `install`, `test`, `demo`, `demo-orders`, `lint`, `format`, `check` targets
+- `pyproject.toml` — updated description, classifiers, and ruff config
+- README restructured as lean landing page: "From messy data to trustworthy decisions" tagline, user-journey Mermaid, business impact table, output table, Python/R vs SQL comparison
 - `docs/assets/README.md` — banner design specification and Canva/Figma prompt
+- Who-this-is-for and limitations wording added (docs and README)
 - 204 pytest tests (74 new since 0.2.0)
 
 ---
